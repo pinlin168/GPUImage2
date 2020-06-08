@@ -14,6 +14,7 @@ public class PictureOutput: ImageConsumer {
     public var cgImageAvailableCallback:((CGImage) -> ())?
     public var onlyCaptureNextFrame:Bool = true
     public var keepImageAroundForSynchronousCapture:Bool = false
+    public var exportWithAlpha = false
     var storedFramebuffer:Framebuffer?
     
     public let sources = SourceContainer()
@@ -57,7 +58,8 @@ public class PictureOutput: ImageConsumer {
         renderFramebuffer.unlock()
         guard let dataProvider = CGDataProvider(dataInfo:nil, data:data, size:imageByteSize, releaseData: dataProviderReleaseCallback) else {fatalError("Could not allocate a CGDataProvider")}
         let defaultRGBColorSpace = CGColorSpaceCreateDeviceRGB()
-        return CGImage(width:Int(framebuffer.size.width), height:Int(framebuffer.size.height), bitsPerComponent:8, bitsPerPixel:32, bytesPerRow:4 * Int(framebuffer.size.width), space:defaultRGBColorSpace, bitmapInfo:CGBitmapInfo() /*| CGImageAlphaInfo.Last*/, provider:dataProvider, decode:nil, shouldInterpolate:false, intent:.defaultIntent)!
+        let bitmapInfo = exportWithAlpha ? CGBitmapInfo(rawValue: CGImageAlphaInfo.last.rawValue) : CGBitmapInfo()
+        return CGImage(width:Int(framebuffer.size.width), height:Int(framebuffer.size.height), bitsPerComponent:8, bitsPerPixel:32, bytesPerRow:4 * Int(framebuffer.size.width), space:defaultRGBColorSpace, bitmapInfo: bitmapInfo, provider:dataProvider, decode:nil, shouldInterpolate:false, intent:.defaultIntent)!
     }
     
     public func newFramebufferAvailable(_ framebuffer:Framebuffer, fromSourceIndex:UInt) {
