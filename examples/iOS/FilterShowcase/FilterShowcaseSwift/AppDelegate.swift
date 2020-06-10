@@ -1,12 +1,13 @@
 import UIKit
+import GPUImage
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
                             
     var window: UIWindow?
 
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [NSObject : AnyObject]?) -> Bool {
-        return true
+    func applicationDidFinishLaunching(_ application: UIApplication) {
+        _needCheckFilterContainerThread = false
     }
 }
 

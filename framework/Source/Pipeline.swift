@@ -2,6 +2,8 @@
 // MARK: Basic types
 import Foundation
 
+public var _needCheckFilterContainerThread: Bool?
+
 public protocol ImageSource: AnyObject {
     var _needCheckSourceThread: Bool { get }
     var targets:TargetContainer { get }
@@ -34,7 +36,7 @@ infix operator --> : AdditionPrecedence
 
 public extension ImageSource {
     var _needCheckSourceThread: Bool {
-        return true
+        return _needCheckFilterContainerThread ?? true
     }
     
     func addTarget(_ target:ImageConsumer, atTargetIndex:UInt? = nil) {
@@ -102,7 +104,7 @@ public extension ImageSource {
 
 public extension ImageConsumer {
     var _needCheckConsumerThread: Bool {
-        return true
+        return _needCheckFilterContainerThread ?? true
     }
     
     func addSource(_ source:ImageSource) -> UInt? {
