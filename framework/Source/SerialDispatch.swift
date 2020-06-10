@@ -1,4 +1,5 @@
 import Foundation
+import AVFoundation
 
 #if os(Linux)
 // For now, disable GCD on Linux and run everything on the main thread
