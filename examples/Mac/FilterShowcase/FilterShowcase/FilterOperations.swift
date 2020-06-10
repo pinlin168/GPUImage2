@@ -2,6 +2,43 @@ import GPUImage
 import QuartzCore
 
 let filterOperations: Array<FilterOperationInterface> = [
+    FilterOperation(
+        filter:{AlphaBlend()},
+        listName:"Highlights Blur",
+        titleName:"Gaussian Blur Lumi>0.6(alpha)",
+        sliderConfiguration:.enabled(minimumValue:0.0, maximumValue:1.0, initialValue:0.8),
+        sliderUpdateCallback: {(filter, sliderValue) in
+            filter.mix = sliderValue
+        },
+        filterOperationType:.custom(filterSetupFunction:{(camera, filter, outputView) in
+            let blendFilter = filter as! AlphaBlend
+            blendFilter.removeAllSources()
+            
+            let gaussianBlur = GaussianBlur(blurRadiusInPixels: 10, luminanceThreshold: 0.6)
+            camera --> blendFilter
+            camera --> gaussianBlur --> blendFilter --> outputView
+            return blendFilter
+        })
+    ),
+    FilterOperation(
+        filter:{AlphaBlend()},
+        listName:"Soft Focus",
+        titleName:"Gaussian Blur + Alpha Blend",
+        sliderConfiguration:.enabled(minimumValue:0.0, maximumValue:1.0, initialValue:0.5),
+        sliderUpdateCallback: {(filter, sliderValue) in
+            filter.mix = sliderValue
+        },
+        filterOperationType:.custom(filterSetupFunction:{(camera, filter, outputView) in
+            let blendFilter = filter as! AlphaBlend
+            blendFilter.removeAllSources()
+            
+            let gaussianBlur = GaussianBlur(blurRadiusInPixels: 10, luminanceThreshold: 0.6)
+            gaussianBlur.blurRadiusInPixels = 10
+            camera --> blendFilter
+            camera --> gaussianBlur --> blendFilter --> outputView
+            return blendFilter
+        })
+    ),
     FilterOperation (
         filter:{SaturationAdjustment()},
         listName:"Saturation",
