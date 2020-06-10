@@ -209,7 +209,7 @@
 				TargetAttributes = {
 					BC0037B6195CA11B00B9D651 = {
 						CreatedOnToolsVersion = 6.0;
-						DevelopmentTeam = C9FPMJGKC4;
+						DevelopmentTeam = BCUYJQB9VH;
 						LastSwiftMigration = 0800;
 						ProvisioningStyle = Automatic;
 					};
@@ -422,7 +422,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				DEVELOPMENT_TEAM = C9FPMJGKC4;
+				DEVELOPMENT_TEAM = BCUYJQB9VH;
 				INFOPLIST_FILE = FilterShowcaseSwift/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
@@ -437,7 +437,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				DEVELOPMENT_TEAM = C9FPMJGKC4;
+				DEVELOPMENT_TEAM = BCUYJQB9VH;
 				INFOPLIST_FILE = FilterShowcaseSwift/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
