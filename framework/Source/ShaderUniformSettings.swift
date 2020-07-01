@@ -13,7 +13,21 @@
 #endif
 
 public struct ShaderUniformSettings {
-    private var uniformValues = [String:Any]()
+    private static var lock = os_unfair_lock_s()
+    private var _uniformValues = [String:Any]()
+    private var uniformValues: [String:Any] {
+        get {
+            os_unfair_lock_lock(&Self.lock)
+            let temp = _uniformValues
+            os_unfair_lock_unlock(&Self.lock)
+            return temp
+        }
+        set {
+            os_unfair_lock_lock(&Self.lock)
+            _uniformValues = newValue
+            os_unfair_lock_unlock(&Self.lock)
+        }
+    }
     
     public init() {
     }
@@ -54,7 +68,8 @@ public struct ShaderUniformSettings {
     }
 
     public func restoreShaderSettings(_ shader:ShaderProgram) {
-        for (uniform, value) in uniformValues {
+        let finalUniformValues = uniformValues
+        for (uniform, value) in finalUniformValues {
             switch value {
                 case let value as Float: shader.setValue(GLfloat(value), forUniform:uniform)
                 case let value as Int: shader.setValue(GLint(value), forUniform:uniform)
