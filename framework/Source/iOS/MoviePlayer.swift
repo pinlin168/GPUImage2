@@ -151,7 +151,9 @@ public class MoviePlayer: AVQueuePlayer, ImageSource {
         if enableVideoOutput {
             _setupPlayerItemVideoOutput(for: item)
         }
-        item.audioTimePitchAlgorithm = .varispeed
+        if item.audioTimePitchAlgorithm == .lowQualityZeroLatency {
+            item.audioTimePitchAlgorithm = _audioPitchAlgorithm()
+        }
         lastPlayerItem = item
         self.enableVideoOutput = enableVideoOutput
         _setupPlayerObservers(playerItem: item)
@@ -194,7 +196,9 @@ public class MoviePlayer: AVQueuePlayer, ImageSource {
             if enableVideoOutput {
                 _setupPlayerItemVideoOutput(for: item)
             }
-            item.audioTimePitchAlgorithm = .varispeed
+            if item.audioTimePitchAlgorithm == .lowQualityZeroLatency {
+                item.audioTimePitchAlgorithm = _audioPitchAlgorithm()
+            }
             _setupPlayerObservers(playerItem: item)
         } else {
             _removePlayerObservers()
@@ -421,6 +425,16 @@ public class MoviePlayer: AVQueuePlayer, ImageSource {
         _resetTimeObservers()
         loop = enabled
     }
+    
+    public func changePlayRate(to rate: Float) {
+        playrate = rate
+        items().forEach {
+            if $0.audioTimePitchAlgorithm == .lowQualityZeroLatency {
+                $0.audioTimePitchAlgorithm = _audioPitchAlgorithm()
+            }
+        }
+        resume()
+    }
 }
 
 private extension MoviePlayer {
@@ -500,6 +514,12 @@ private extension MoviePlayer {
                 self.timeObserversQueue.append(observer)
             }
         }
+    }
+    
+    // Both algorithm has the highest quality
+    // Except .spectral has pitch correction, which is suitable for fast/slow play rate
+    func _audioPitchAlgorithm() -> AVAudioTimePitchAlgorithm {
+        return abs(playrate - 1.0) < .ulpOfOne ? .varispeed : .spectral
     }
     
     func onCurrentItemPlayToEnd() {
