@@ -26,9 +26,16 @@ public class PictureInput: ImageSource {
     public let targets = TargetContainer()
     public private(set) var imageFramebuffer:Framebuffer?
     public var framebufferUserInfo:[AnyHashable:Any]?
+    public let imageName: String
     var hasProcessedImage:Bool = false
     
-    public init(image:CGImage, smoothlyScaleOutput:Bool = false, orientation:ImageOrientation = .portrait) throws {
+    public init(
+        image: CGImage,
+        imageName: String? = nil,
+        smoothlyScaleOutput: Bool = false,
+        orientation: ImageOrientation = .portrait) throws {
+        self.imageName = imageName ?? "CGImage"
+
         let widthOfImage = GLint(image.width)
         let heightOfImage = GLint(image.height)
         
@@ -137,12 +144,12 @@ public class PictureInput: ImageSource {
     }
     
     public convenience init(image:UIImage, smoothlyScaleOutput:Bool = false, orientation:ImageOrientation = .portrait) throws {
-        try self.init(image:image.cgImage!, smoothlyScaleOutput:smoothlyScaleOutput, orientation:orientation)
+        try self.init(image:image.cgImage!, imageName:"UIImage", smoothlyScaleOutput:smoothlyScaleOutput, orientation:orientation)
     }
     
     public convenience init(imageName:String, smoothlyScaleOutput:Bool = false, orientation:ImageOrientation = .portrait) throws {
         guard let image = UIImage(named:imageName) else { throw PictureInputError.noSuchImageError(imageName: imageName) }
-        try self.init(image:image.cgImage!, smoothlyScaleOutput:smoothlyScaleOutput, orientation:orientation)
+        try self.init(image:image.cgImage!, imageName:imageName, smoothlyScaleOutput:smoothlyScaleOutput, orientation:orientation)
     }
     
     deinit {

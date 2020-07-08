@@ -222,3 +222,8 @@ public class RenderView:UIView, ImageConsumer {
     }
 }
 
+extension RenderView: DebugPipelineNameable {
+    public var debugNameForPipeline: String {
+        return "RenderView"
+    }
+}

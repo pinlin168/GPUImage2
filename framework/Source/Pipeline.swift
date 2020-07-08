@@ -300,6 +300,57 @@ public class ImageRelay: ImageProcessingOperation {
     }
 }
 
+public protocol DebugPipelineNameable {
+    var debugNameForPipeline: String { get }
+}
+
+private func simpleName<T>(_ obj: T) -> String {
+    if let obj = obj as? DebugPipelineNameable {
+        return obj.debugNameForPipeline
+    }
+
+    let origin = String(describing: obj)
+    return origin.split(separator: ".").last.map { String($0) } ?? origin
+}
+
+extension OperationGroup {
+    public var debugPipelineDescription: String {
+        // if group have custom name, do not use relay.description
+        if let obj = self as? DebugPipelineNameable {
+            return obj.debugNameForPipeline
+        }
+
+        return "[\(simpleName(self)) -> \(inputImageRelay.debugPipelineDescription)]"
+    }
+}
+
+public extension ImageSource {
+    var debugPipelineDescription: String {
+        let nextInfos: [String] = targets.map { consumer, _ in
+            if let c = consumer as? OperationGroup {
+                return c.debugPipelineDescription
+            }
+
+            if let c = consumer as? ImageRelay {
+                return c.debugPipelineDescription
+            }
+
+            if let c = consumer as? ImageSource {
+                return c.debugPipelineDescription
+            }
+
+            return simpleName(consumer)
+        }
+        let nextInfosText = nextInfos.joined(separator: " -> ")
+
+        if self is ImageRelay {
+            return nextInfosText
+        }
+
+        return "\(simpleName(self)) -> \(nextInfosText)"
+    }
+}
+
 #if DEBUG
 public extension ImageSource {
     var debugPipelineNext: String {

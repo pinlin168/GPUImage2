@@ -15,4 +15,10 @@ public class LookupFilter: BasicOperation {
         ({intensity = 1.0})()
     }
 }
+
+extension LookupFilter: DebugPipelineNameable {
+    public var debugNameForPipeline: String {
+        "LookupFilter(\(lookupImage?.imageName ?? "null")/\(intensity))"
+    }
+}
 #endif
