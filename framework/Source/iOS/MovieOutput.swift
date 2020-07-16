@@ -211,7 +211,10 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
         let block = { [weak self] () -> Void in
             do {
                 guard let self = self else { return }
-                guard self.assetWriter.status != .cancelled else {
+                if self.assetWriter.status == .writing {
+                    completionCallback?(true, nil)
+                    return
+                } else if self.assetWriter.status == .cancelled {
                     throw MovieOutputError.startWritingError(assetWriterError: nil)
                 }
                 
