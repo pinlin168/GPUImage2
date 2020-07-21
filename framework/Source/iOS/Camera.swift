@@ -28,7 +28,7 @@ public enum PhysicalCameraLocation {
         }
     }
     
-    func captureDevicePosition() -> AVCaptureDevice.Position {
+    public func captureDevicePosition() -> AVCaptureDevice.Position {
         switch self {
             case .backFacing: return .back
             case .frontFacing: return .front
