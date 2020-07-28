@@ -119,7 +119,7 @@ private extension MovieCache {
             return .failure(.sameState)
         }
         switch (state, newState) {
-        case (.unknown, .idle), (.unknown, .caching), (.unknown, .writing),
+        case (.unknown, .idle), (.unknown, .caching), (.unknown, .writing), (.unknown, .canceled),
              (.idle, .caching), (.idle, .writing), (.idle, .canceled),
              (.caching, .writing), (.caching, .stopped), (.caching, .canceled), (.caching, .idle),
              (.writing, .stopped), (.writing, .canceled),
