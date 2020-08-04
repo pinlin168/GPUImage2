@@ -56,6 +56,7 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
     public weak var delegate: MovieOutputDelegate?
     
     public let url: URL
+    public var writerStatus: AVAssetWriter.Status { assetWriter.status }
     private let assetWriter:AVAssetWriter
     let assetWriterVideoInput:AVAssetWriterInput
     var assetWriterAudioInput:AVAssetWriterInput?

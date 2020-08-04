@@ -8,11 +8,24 @@
 import Foundation
 import AVFoundation
 
-public enum MovieCacheError: Error {
+public enum MovieCacheError: Error, Equatable, CustomStringConvertible {
     case invalidState
     case sameState
     case emptyMovieOutput
     case movieOutputError(Error)
+    
+    public var description: String {
+        switch self {
+        case .invalidState: return "invalidState"
+        case .sameState: return "sameState"
+        case .emptyMovieOutput: return "emptyMovieOutput"
+        case .movieOutputError: return "movieOutputError"
+        }
+    }
+    
+    public static func == (lhs: MovieCacheError, rhs: MovieCacheError) -> Bool {
+        return lhs.description == rhs.description
+    }
 }
 
 public class MovieCache: ImageConsumer, AudioEncodingTarget {
@@ -33,6 +46,7 @@ public class MovieCache: ImageConsumer, AudioEncodingTarget {
         case canceled
     }
     public private(set) var state = State.unknown
+    private var writingCallback: Completion?
     
     public init() {
         print("MovieCache init")
@@ -111,33 +125,35 @@ private extension MovieCache {
         return state != .unknown && state != .idle
     }
     
-    func _tryTransitingState(to newState: State, _ errorCallback: Completion? = nil) -> Result<Bool, MovieCacheError> {
+    func _tryTransitingState(to newState: State, _ errorCallback: Completion? = nil) -> MovieCacheError? {
         if state == newState {
             // NOTE: for same state, just do nothing and callback
             print("WARNING: Same state transition for:\(state)")
             errorCallback?(.success(true))
-            return .failure(.sameState)
+            return .sameState
         }
         switch (state, newState) {
-        case (.unknown, .idle), (.unknown, .caching), (.unknown, .writing), (.unknown, .canceled),
-             (.idle, .caching), (.idle, .writing), (.idle, .canceled),
-             (.caching, .writing), (.caching, .stopped), (.caching, .canceled), (.caching, .idle),
-             (.writing, .stopped), (.writing, .canceled),
-             (.stopped, .idle), (.stopped, .writing), (.stopped, .canceled),
-             (.canceled, .idle), (.canceled, .writing):
+        case (.unknown, .idle), (.unknown, .caching), (.unknown, .writing),
+             (.idle, .caching), (.idle, .writing),
+             (.caching, .writing), (.caching, .stopped), (.caching, .idle),
+             (.writing, .stopped),
+             (.stopped, .idle), (.stopped, .writing),
+             (.canceled, .idle), (.canceled, .writing),
+             (_, .canceled): // any state can transite to canceled
             debugPrint("state transite from:\(state) to:\(newState)")
             state = newState
-            return .success(true)
+            return nil
         default:
             assertionFailure()
             print("ERROR: invalid state transition from:\(state) to:\(newState)")
             errorCallback?(.failure(.invalidState))
-            return .failure(.invalidState)
+            return .invalidState
         }
     }
     
     func _startCaching(duration: TimeInterval) {
-        guard case .success = _tryTransitingState(to: .caching) else { return }
+        let error = _tryTransitingState(to: .caching)
+        guard error == nil else { return }
         print("start caching")
         cacheBuffersDuration = duration
     }
@@ -150,16 +166,24 @@ private extension MovieCache {
         }
         print("set movie output")
         self.movieOutput = movieOutput
+        if state == .writing {
+            print("it is already writing, start MovieOutput recording immediately")
+            _startMovieOutput(writingCallback)
+        }
     }
     
     func _startWriting(_ completionCallback: Completion? = nil) {
-        guard case .success = _tryTransitingState(to: .writing, completionCallback) else { return }
+        guard _tryTransitingState(to: .writing) == nil else { return }
         guard movieOutput != nil else {
             print("movie output is not ready yet, waiting...")
-            completionCallback?(.success(true))
+            writingCallback = completionCallback
             return
         }
         print("start writing")
+        _startMovieOutput(completionCallback)
+    }
+    
+    func _startMovieOutput(_ completionCallback: Completion? = nil) {
         movieOutput?.startRecording(sync: true) { _, error in
             if let error = error {
                 completionCallback?(.failure(.movieOutputError(error)))
@@ -170,31 +194,37 @@ private extension MovieCache {
     }
     
     func _stopWriting(_ completionCallback: Completion? = nil) {
-        guard case .success = _tryTransitingState(to: .stopped, completionCallback), movieOutput != nil else { return }
+        guard _tryTransitingState(to: .stopped) == nil else { return }
+        guard movieOutput != nil else { return }
         print("stop writing. videoFramebuffers:\(framebufferCache.count) audioSampleBuffers:\(audioSampleBufferCache.count) videoSampleBuffers:\(videoSampleBufferCache.count)")
         movieOutput?.finishRecording(sync: true) {
             completionCallback?(.success(true))
         }
         movieOutput = nil
+        writingCallback = nil
     }
     
     func _cancelWriting(_ completionCallback: Completion? = nil) {
         defer {
-            self.movieOutput = nil
+            movieOutput = nil
+            writingCallback = nil
         }
-        guard case .success = _tryTransitingState(to: .canceled, completionCallback), let movieOutput = movieOutput else { return }
+        guard _tryTransitingState(to: .canceled) == nil else { return }
+        guard let movieOutput = movieOutput else {
+            completionCallback?(.success(true))
+            return
+        }
         print("cancel writing")
         movieOutput.cancelRecording(sync: true) {
             completionCallback?(.success(true))
         }
-        self.movieOutput = nil
     }
     
     func _stopCaching(needsCancel: Bool) {
         if needsCancel && state == .writing {
             _cancelWriting()
         }
-        guard case .success = _tryTransitingState(to: .idle) else { return }
+        guard _tryTransitingState(to: .idle) == nil else { return }
         print("stop caching")
         _cleanBufferCaches()
     }
