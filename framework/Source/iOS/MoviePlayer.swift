@@ -65,7 +65,7 @@ public class MoviePlayer: AVQueuePlayer, ImageSource {
         return asset.imageOrientation ?? .portrait
     }
     public var didPlayToEnd: Bool {
-        return currentItem?.currentTime() ?? .zero >= assetDuration
+        return currentItem == nil || (currentItem?.currentTime() ?? .zero >= assetDuration)
     }
     public var hasTarget: Bool { targets.count > 0 }
     
