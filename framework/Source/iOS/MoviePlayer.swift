@@ -64,6 +64,7 @@ public class MoviePlayer: AVQueuePlayer, ImageSource {
         guard let asset = asset else { return .portrait }
         return asset.imageOrientation ?? .portrait
     }
+    // NOTE: be careful, this property might block your thread since it needs to access currentTime
     public var didPlayToEnd: Bool {
         return currentItem == nil || (currentItem?.currentTime() ?? .zero >= assetDuration)
     }
@@ -170,7 +171,7 @@ public class MoviePlayer: AVQueuePlayer, ImageSource {
             }
             remove(item)
             super.insert(item, after: afterItem)
-            print("[MoviePlayer] insert new item(\(item.duration.seconds)s):\(item) afterItem:\(String(describing: afterItem)) enableVideoOutput:\(enableVideoOutput) currentTime:\(currentTime().seconds) itemsAfter:\(items().count)")
+            print("[MoviePlayer] insert new item(\(item.duration.seconds)s):\(item) afterItem:\(String(describing: afterItem)) enableVideoOutput:\(enableVideoOutput) itemsAfter:\(items().count)")
         }
         didNotifyEndedItem = nil
     }
@@ -211,7 +212,7 @@ public class MoviePlayer: AVQueuePlayer, ImageSource {
         } else {
             super.replaceCurrentItem(with: item)
         }
-        print("[MoviePlayer] replace current item with newItem(\(item?.duration.seconds ?? 0)s)):\(String(describing: item)) enableVideoOutput:\(enableVideoOutput) currentTime:\(currentTime().seconds) itemsAfter:\(items().count) ")
+        print("[MoviePlayer] replace current item with newItem(\(item?.duration.seconds ?? 0)s)):\(String(describing: item)) enableVideoOutput:\(enableVideoOutput) itemsAfter:\(items().count) ")
     }
     
     public func replayLastItem() {
@@ -222,25 +223,25 @@ public class MoviePlayer: AVQueuePlayer, ImageSource {
         } else {
             play()
         }
-        print("[MoviePlayer] replay last item:\(playerItem) currentTime:\(currentTime().seconds)")
+        print("[MoviePlayer] replay last item:\(playerItem)")
     }
     
     override public func remove(_ item: AVPlayerItem) {
         super.remove(item)
         pendingNewItems.removeAll { $0 == item }
-        print("[MoviePlayer] remove item:\(item) currentTime:\(currentTime().seconds)")
+        print("[MoviePlayer] remove item:\(item)")
     }
     
     override public func removeAllItems() {
         _stopLoopingIfNeeded()
         super.removeAllItems()
         pendingNewItems.removeAll()
-        print("[MoviePlayer] remove all items currentTime:\(currentTime().seconds)")
+        print("[MoviePlayer] remove all items")
     }
     
     override public func advanceToNextItem() {
         super.advanceToNextItem()
-        print("[MoviePlayer] advance to next item currentTime:\(currentTime().seconds)")
+        print("[MoviePlayer] advance to next item")
     }
     
     // MARK: -
@@ -271,7 +272,7 @@ public class MoviePlayer: AVQueuePlayer, ImageSource {
         }
         isPlaying = true
         isProcessing = false
-        print("[MoviePlayer] start currentTime:\(currentTime().seconds) duration:\(String(describing: asset?.duration.seconds)) items:\(items())")
+        print("[MoviePlayer] start duration:\(String(describing: asset?.duration.seconds)) items:\(items())")
         _setupDisplayLinkIfNeeded()
         _resetTimeObservers()
         didNotifyEndedItem = nil
@@ -297,19 +298,19 @@ public class MoviePlayer: AVQueuePlayer, ImageSource {
     public func resume() {
         isPlaying = true
         rate = playrate
-        print("movie player resume currentTime:\(currentTime().seconds) \(String(describing: asset))")
+        print("movie player resume \(String(describing: asset))")
     }
     
     override public func pause() {
         isPlaying = false
         guard rate != 0 else { return }
-        print("movie player pause currentTime:\(currentTime().seconds) \(String(describing: asset))")
+        print("movie player pause \(String(describing: asset))")
         super.pause()
     }
     
     public func stop() {
         pause()
-        print("movie player stop currentTime:\(currentTime().seconds) \(String(describing: asset))")
+        print("movie player stop \(String(describing: asset))")
         _timeObserversUpdate { [weak self] in
             self?.timeObserversQueue.removeAll()
         }
