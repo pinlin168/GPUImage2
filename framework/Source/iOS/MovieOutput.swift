@@ -57,6 +57,7 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
     
     public let url: URL
     public var writerStatus: AVAssetWriter.Status { assetWriter.status }
+    public var writerError: Error? { assetWriter.error }
     private let assetWriter:AVAssetWriter
     let assetWriterVideoInput:AVAssetWriterInput
     var assetWriterAudioInput:AVAssetWriterInput?

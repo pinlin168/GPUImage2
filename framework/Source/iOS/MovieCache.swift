@@ -47,9 +47,20 @@ public class MovieCache: ImageConsumer, AudioEncodingTarget {
     }
     public private(set) var state = State.unknown
     private var writingCallback: Completion?
+    public var isReadyToWrite: Bool {
+        guard let movieOutput = movieOutput else { return false }
+        return movieOutput.writerStatus == .unknown
+    }
     
     public init() {
         print("MovieCache init")
+    }
+    
+    deinit {
+        if movieOutput?.writerStatus == .writing {
+            print("[WARNING] movieOutput is still writing, cancel it now")
+            movieOutput?.cancelRecording()
+        }
     }
     
     public func startCaching(duration: TimeInterval) {
@@ -58,9 +69,29 @@ public class MovieCache: ImageConsumer, AudioEncodingTarget {
         }
     }
     
-    public func setMovieOutput(_ movieOutput: MovieOutput) {
+    public func setMovieOutputIfNotReady(url: URL,
+                                         size: Size,
+                                         fileType:AVFileType = .mov,
+                                         liveVideo:Bool = false,
+                                         videoSettings:[String:Any]? = nil,
+                                         videoNaturalTimeScale:CMTimeScale? = nil,
+                                         optimizeForNetworkUse: Bool = false,
+                                         disablePixelBufferAttachments: Bool = true,
+                                         audioSettings:[String:Any]? = nil,
+                                         audioSourceFormatHint:CMFormatDescription? = nil,
+                                         _ configure: ((MovieOutput) -> Void)? = nil) {
         MovieOutput.movieProcessingContext.runOperationAsynchronously { [weak self] in
-            self?._setMovieOutput(movieOutput)
+            self?._setMovieOutputIfNotReady(url: url,
+                                            size: size,
+                                            fileType: fileType,
+                                            liveVideo: liveVideo,
+                                            videoSettings: videoSettings,
+                                            videoNaturalTimeScale: videoNaturalTimeScale,
+                                            optimizeForNetworkUse: optimizeForNetworkUse,
+                                            disablePixelBufferAttachments: disablePixelBufferAttachments,
+                                            audioSettings: audioSettings,
+                                            audioSourceFormatHint: audioSourceFormatHint,
+                                            configure)
         }
     }
     
@@ -137,8 +168,8 @@ private extension MovieCache {
              (.idle, .caching), (.idle, .writing),
              (.caching, .writing), (.caching, .stopped), (.caching, .idle),
              (.writing, .stopped),
-             (.stopped, .idle), (.stopped, .writing),
-             (.canceled, .idle), (.canceled, .writing),
+             (.stopped, .idle), (.stopped, .caching), (.stopped, .writing),
+             (.canceled, .idle), (.canceled, .caching), (.canceled, .writing),
              (_, .canceled): // any state can transite to canceled
             debugPrint("state transite from:\(state) to:\(newState)")
             state = newState
@@ -158,17 +189,47 @@ private extension MovieCache {
         cacheBuffersDuration = duration
     }
     
-    func _setMovieOutput(_ movieOutput: MovieOutput) {
-        guard state != .writing || self.movieOutput == nil else {
-            print("Should not set MovieOutput during writing")
-            assertionFailure("Should not set MovieOutput during writing")
+    func _setMovieOutputIfNotReady(url: URL,
+                                   size: Size,
+                                   fileType: AVFileType = .mov,
+                                   liveVideo: Bool = false,
+                                   videoSettings: [String:Any]? = nil,
+                                   videoNaturalTimeScale: CMTimeScale? = nil,
+                                   optimizeForNetworkUse: Bool = false,
+                                   disablePixelBufferAttachments: Bool = true,
+                                   audioSettings: [String:Any]? = nil,
+                                   audioSourceFormatHint: CMFormatDescription? = nil,
+                                   _ configure: ((MovieOutput) -> Void)? = nil) {
+        guard !isReadyToWrite else {
+            print("No need to create MovieOutput")
             return
         }
-        print("set movie output")
-        self.movieOutput = movieOutput
-        if state == .writing {
-            print("it is already writing, start MovieOutput recording immediately")
-            _startMovieOutput(writingCallback)
+        if state == .writing, let oldMovieOutput = movieOutput {
+            _cancelWriting() { _ in
+                print("Remove canceled video url:\(oldMovieOutput.url)")
+                try? FileManager.default.removeItem(at: oldMovieOutput.url)
+            }
+        }
+        do {
+            let newMovieOutput = try MovieOutput(URL: url,
+                                                 size: size,
+                                                 fileType: fileType,
+                                                 liveVideo: liveVideo,
+                                                 videoSettings: videoSettings,
+                                                 videoNaturalTimeScale: videoNaturalTimeScale,
+                                                 optimizeForNetworkUse: optimizeForNetworkUse,
+                                                 disablePixelBufferAttachments: disablePixelBufferAttachments,
+                                                 audioSettings: audioSettings,
+                                                 audioSourceFormatHint: audioSourceFormatHint)
+            self.movieOutput = newMovieOutput
+            print("set movie output")
+            configure?(newMovieOutput)
+            if state == .writing {
+                print("it is already writing, start MovieOutput recording immediately")
+                _startMovieOutput(writingCallback)
+            }
+        } catch {
+            print("[ERROR] can't create movie output")
         }
     }
     
@@ -195,12 +256,16 @@ private extension MovieCache {
     
     func _stopWriting(_ completionCallback: Completion? = nil) {
         guard _tryTransitingState(to: .stopped) == nil else { return }
-        guard movieOutput != nil else { return }
+        guard let movieOutput = movieOutput else { return }
         print("stop writing. videoFramebuffers:\(framebufferCache.count) audioSampleBuffers:\(audioSampleBufferCache.count) videoSampleBuffers:\(videoSampleBufferCache.count)")
-        movieOutput?.finishRecording(sync: true) {
-            completionCallback?(.success(true))
+        movieOutput.finishRecording(sync: true) {
+            if let error = movieOutput.writerError {
+                completionCallback?(.failure(.movieOutputError(error)))
+            } else {
+                completionCallback?(.success(true))
+            }
         }
-        movieOutput = nil
+        self.movieOutput = nil
         writingCallback = nil
     }
     
