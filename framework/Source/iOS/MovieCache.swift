@@ -113,9 +113,9 @@ public class MovieCache: ImageConsumer, AudioEncodingTarget {
         }
     }
     
-    public func stopCaching(needsCancel: Bool = false) {
+    public func stopCaching(needsCancel: Bool = false, _ completionCallback: Completion? = nil) {
         MovieOutput.movieProcessingContext.runOperationAsynchronously { [weak self] in
-            self?._stopCaching(needsCancel: needsCancel)
+            self?._stopCaching(needsCancel: needsCancel, completionCallback)
         }
     }
 }
@@ -285,9 +285,12 @@ private extension MovieCache {
         }
     }
     
-    func _stopCaching(needsCancel: Bool) {
+    func _stopCaching(needsCancel: Bool, _ completionCallback: Completion?) {
         if needsCancel && state == .writing {
             _cancelWriting()
+        }
+        defer {
+            completionCallback?(.success(true))
         }
         guard _tryTransitingState(to: .idle) == nil else { return }
         print("stop caching")
