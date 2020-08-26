@@ -402,6 +402,10 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
             
             pixelBuffer = nil
             pixelBufferPoolSemaphore.wait()
+            guard assetWriterPixelBufferInput.pixelBufferPool != nil else {
+                print("WARNING: PixelBufferInput pool is nil")
+                return false
+            }
             let pixelBufferStatus = CVPixelBufferPoolCreatePixelBuffer(nil, assetWriterPixelBufferInput.pixelBufferPool!, &pixelBuffer)
             pixelBufferPoolSemaphore.signal()
             guard pixelBuffer != nil && pixelBufferStatus == kCVReturnSuccess else {
