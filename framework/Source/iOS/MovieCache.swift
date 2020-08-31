@@ -101,7 +101,7 @@ public class MovieCache: ImageConsumer, AudioEncodingTarget {
         }
     }
     
-    public func stopWriting(_ completionCallback: Completion? = nil) {
+    public func stopWriting(_ completionCallback: ((URL?, MovieCacheError?) -> Void)? = nil) {
         MovieOutput.movieProcessingContext.runOperationAsynchronously { [weak self] in
             self?._stopWriting(completionCallback)
         }
@@ -169,7 +169,7 @@ private extension MovieCache {
              (.caching, .writing), (.caching, .stopped), (.caching, .idle),
              (.writing, .stopped),
              (.stopped, .idle), (.stopped, .caching), (.stopped, .writing),
-             (.canceled, .idle), (.canceled, .caching), (.canceled, .writing),
+             (.canceled, .idle), (.canceled, .caching), (.canceled, .writing), (.canceled, .stopped),
              (_, .canceled): // any state can transite to canceled
             debugPrint("state transite from:\(state) to:\(newState)")
             state = newState
@@ -204,7 +204,8 @@ private extension MovieCache {
             print("No need to create MovieOutput")
             return
         }
-        if state == .writing, let oldMovieOutput = movieOutput {
+        if let oldMovieOutput = movieOutput, movieOutput?.writerStatus == .writing {
+            assertionFailure("MovieOutput is still writing, should not set MovieOutput. state:\(state)")
             _cancelWriting() { _ in
                 print("Remove canceled video url:\(oldMovieOutput.url)")
                 try? FileManager.default.removeItem(at: oldMovieOutput.url)
@@ -254,15 +255,21 @@ private extension MovieCache {
         }
     }
     
-    func _stopWriting(_ completionCallback: Completion? = nil) {
-        guard _tryTransitingState(to: .stopped) == nil else { return }
-        guard let movieOutput = movieOutput else { return }
+    func _stopWriting(_ completionCallback: ((URL?, MovieCacheError?) -> Void)? = nil) {
+        guard _tryTransitingState(to: .stopped) == nil else {
+            completionCallback?(movieOutput?.url, .invalidState)
+            return
+        }
+        guard let movieOutput = movieOutput else {
+            completionCallback?(self.movieOutput?.url, .emptyMovieOutput)
+            return
+        }
         print("stop writing. videoFramebuffers:\(framebufferCache.count) audioSampleBuffers:\(audioSampleBufferCache.count) videoSampleBuffers:\(videoSampleBufferCache.count)")
         movieOutput.finishRecording(sync: true) {
             if let error = movieOutput.writerError {
-                completionCallback?(.failure(.movieOutputError(error)))
+                completionCallback?(movieOutput.url, .movieOutputError(error))
             } else {
-                completionCallback?(.success(true))
+                completionCallback?(movieOutput.url, nil)
             }
         }
         self.movieOutput = nil
