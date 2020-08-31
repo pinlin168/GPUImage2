@@ -63,7 +63,7 @@ public class Camera: NSObject, ImageSource, AVCaptureVideoDataOutputSampleBuffer
     public var location:PhysicalCameraLocation {
         didSet {
             if oldValue == location { return }
-            configureDeviceInput()
+            configureDeviceInput(location: location, deviceType: deviceType)
         }
     }
     public var runBenchmark:Bool = false
@@ -94,11 +94,8 @@ public class Camera: NSObject, ImageSource, AVCaptureVideoDataOutputSampleBuffer
     public var audioInput:AVCaptureDeviceInput?
     public var audioOutput:AVCaptureAudioDataOutput?
     public var dontDropFrames: Bool = false
-    public var deviceType = AVCaptureDevice.DeviceType.builtInWideAngleCamera {
-        didSet {
-            guard oldValue.rawValue != deviceType.rawValue else { return }
-            configureDeviceInput()
-        }
+    public var deviceType: AVCaptureDevice.DeviceType {
+        return inputCamera.deviceType
     }
     public var backCameraStableMode: AVCaptureVideoStabilizationMode = .standard {
         didSet {
@@ -140,7 +137,6 @@ public class Camera: NSObject, ImageSource, AVCaptureVideoDataOutputSampleBuffer
         self.captureSession = AVCaptureSession()
         self.captureSession.beginConfiguration()
         captureSession.sessionPreset = sessionPreset
-        self.deviceType = deviceType
 
         if let cameraDevice = cameraDevice {
             self.inputCamera = cameraDevice
@@ -248,7 +244,7 @@ public class Camera: NSObject, ImageSource, AVCaptureVideoDataOutputSampleBuffer
         Camera.updateVideoOutput(location: location, videoOutput: videoOutput, stableMode:stableMode)
     }
     
-    func configureDeviceInput() {
+    public func configureDeviceInput(location: PhysicalCameraLocation, deviceType: AVCaptureDevice.DeviceType) {
         guard let device = location.device(deviceType) else {
             fatalError("ERROR: Can't find video devices for \(location)")
         }
@@ -262,6 +258,7 @@ public class Camera: NSObject, ImageSource, AVCaptureVideoDataOutputSampleBuffer
                 inputCamera = device
                 captureSession.addInput(newVideoInput)
                 videoInput = newVideoInput
+                self.location = location
                 configureStabilization()
             } else {
                 print("Can't add video input")
