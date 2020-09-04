@@ -101,7 +101,7 @@ public class MovieCache: ImageConsumer, AudioEncodingTarget {
         }
     }
     
-    public func stopWriting(_ completionCallback: ((URL?, MovieCacheError?) -> Void)? = nil) {
+    public func stopWriting(_ completionCallback: ((MovieOutput?, MovieCacheError?) -> Void)? = nil) {
         MovieOutput.movieProcessingContext.runOperationAsynchronously { [weak self] in
             self?._stopWriting(completionCallback)
         }
@@ -255,21 +255,21 @@ private extension MovieCache {
         }
     }
     
-    func _stopWriting(_ completionCallback: ((URL?, MovieCacheError?) -> Void)? = nil) {
+    func _stopWriting(_ completionCallback: ((MovieOutput?, MovieCacheError?) -> Void)? = nil) {
         guard _tryTransitingState(to: .stopped) == nil else {
-            completionCallback?(movieOutput?.url, .invalidState)
+            completionCallback?(movieOutput, .invalidState)
             return
         }
         guard let movieOutput = movieOutput else {
-            completionCallback?(self.movieOutput?.url, .emptyMovieOutput)
+            completionCallback?(self.movieOutput, .emptyMovieOutput)
             return
         }
         print("stop writing. videoFramebuffers:\(framebufferCache.count) audioSampleBuffers:\(audioSampleBufferCache.count) videoSampleBuffers:\(videoSampleBufferCache.count)")
         movieOutput.finishRecording(sync: true) {
             if let error = movieOutput.writerError {
-                completionCallback?(movieOutput.url, .movieOutputError(error))
+                completionCallback?(movieOutput, .movieOutputError(error))
             } else {
-                completionCallback?(movieOutput.url, nil)
+                completionCallback?(movieOutput, nil)
             }
         }
         self.movieOutput = nil

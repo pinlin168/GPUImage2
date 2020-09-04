@@ -67,7 +67,7 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
     var videoEncodingIsFinished = false
     var audioEncodingIsFinished = false
     var markIsFinishedAfterProcessing = false
-    private var startFrameTime: CMTime?
+    public private(set) var startFrameTime: CMTime?
     public private(set) var recordedDuration: CMTime?
     private var previousFrameTime: CMTime?
     var encodingLiveVideo:Bool {
