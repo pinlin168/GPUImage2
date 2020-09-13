@@ -56,6 +56,7 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
     public weak var delegate: MovieOutputDelegate?
     
     public let url: URL
+    public var videoID: String?
     public var writerStatus: AVAssetWriter.Status { assetWriter.status }
     public var writerError: Error? { assetWriter.error }
     private let assetWriter:AVAssetWriter
@@ -539,14 +540,13 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
             // we don't want to risk letting framebuffers pile up in between poll intervals.
             usleep(100000) // 0.1 seconds
         }
-        let time = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-        synchronizedEncodingDebugPrint("appending video sample buffer at:\(time.seconds)")
+        synchronizedEncodingDebugPrint("appending video sample buffer at:\(frameTime.seconds)")
         guard let buffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
             print("WARNING: Cannot get pixel buffer from sampleBuffer:\(sampleBuffer)")
             return false
         }
         if !assetWriterVideoInput.isReadyForMoreMediaData {
-            print("WARNING: video input is not ready at time: \(time))")
+            print("WARNING: video input is not ready at time: \(frameTime))")
             return false
         }
         if let ciFilter = ciFilter {
@@ -559,15 +559,15 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
         do {
             var appendResult = false
             try NSObject.catchException {
-                appendResult = bufferInput.append(buffer, withPresentationTime: time)
+                appendResult = bufferInput.append(buffer, withPresentationTime: frameTime)
             }
             if (!appendResult) {
-                print("WARNING: Trouble appending pixel buffer at time: \(time) \(String(describing: assetWriter.error))")
+                print("WARNING: Trouble appending pixel buffer at time: \(frameTime) \(String(describing: assetWriter.error))")
                 return false
             }
             totalVideoFramesAppended += 1
         } catch {
-            print("WARNING: Trouble appending video sample buffer at time: \(time) \(error)")
+            print("WARNING: Trouble appending video sample buffer at time: \(frameTime) \(error)")
             return false
         }
         return true
