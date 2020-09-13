@@ -164,7 +164,7 @@ private extension MovieCache {
             return .sameState
         }
         switch (state, newState) {
-        case (.unknown, .idle), (.unknown, .caching), (.unknown, .writing),
+        case (.unknown, .idle), (.unknown, .caching), (.unknown, .writing), (.unknown, .stopped),
              (.idle, .caching), (.idle, .writing),
              (.caching, .writing), (.caching, .stopped), (.caching, .idle),
              (.writing, .stopped),
