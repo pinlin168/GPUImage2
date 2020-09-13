@@ -280,30 +280,31 @@ public class MovieInput: ImageSource {
         
         while(assetReader.status == .reading) {
             if(thread.isCancelled) { break }
-            
-            if let movieOutput = self.synchronizedMovieOutput {
-                self.conditionLock.lock()
-                if(self.readingShouldWait) {
-                    self.synchronizedEncodingDebugPrint("Disable reading")
-                    self.conditionLock.wait()
-                    self.synchronizedEncodingDebugPrint("Enable reading")
-                }
-                self.conditionLock.unlock()
-                
-                if(movieOutput.assetWriterVideoInput.isReadyForMoreMediaData) {
-                    self.readNextVideoFrame(with: assetReader, from: readerVideoTrackOutput!)
-                }
-                if(movieOutput.assetWriterAudioInput?.isReadyForMoreMediaData ?? false) {
-                    if let readerAudioTrackOutput = readerAudioTrackOutput {
-                        self.readNextAudioSample(with: assetReader, from: readerAudioTrackOutput)
+            autoreleasepool {
+                if let movieOutput = self.synchronizedMovieOutput {
+                    self.conditionLock.lock()
+                    if(self.readingShouldWait) {
+                        self.synchronizedEncodingDebugPrint("Disable reading")
+                        self.conditionLock.wait()
+                        self.synchronizedEncodingDebugPrint("Enable reading")
+                    }
+                    self.conditionLock.unlock()
+                    
+                    if(movieOutput.assetWriterVideoInput.isReadyForMoreMediaData) {
+                        self.readNextVideoFrame(with: assetReader, from: readerVideoTrackOutput!)
+                    }
+                    if(movieOutput.assetWriterAudioInput?.isReadyForMoreMediaData ?? false) {
+                        if let readerAudioTrackOutput = readerAudioTrackOutput {
+                            self.readNextAudioSample(with: assetReader, from: readerAudioTrackOutput)
+                        }
                     }
                 }
-            }
-            else {
-                self.readNextVideoFrame(with: assetReader, from: readerVideoTrackOutput!)
-                if let readerAudioTrackOutput = readerAudioTrackOutput,
-                    self.audioEncodingTarget?.readyForNextAudioBuffer() ?? true {
-                    self.readNextAudioSample(with: assetReader, from: readerAudioTrackOutput)
+                else {
+                    self.readNextVideoFrame(with: assetReader, from: readerVideoTrackOutput!)
+                    if let readerAudioTrackOutput = readerAudioTrackOutput,
+                        self.audioEncodingTarget?.readyForNextAudioBuffer() ?? true {
+                        self.readNextAudioSample(with: assetReader, from: readerAudioTrackOutput)
+                    }
                 }
             }
         }
