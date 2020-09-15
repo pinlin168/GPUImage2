@@ -12,6 +12,7 @@ public enum MovieCacheError: Error, Equatable, CustomStringConvertible {
     case invalidState
     case sameState
     case emptyMovieOutput
+    case unmatchedVideoID
     case movieOutputError(Error)
     
     public var description: String {
@@ -20,6 +21,7 @@ public enum MovieCacheError: Error, Equatable, CustomStringConvertible {
         case .sameState: return "sameState"
         case .emptyMovieOutput: return "emptyMovieOutput"
         case .movieOutputError: return "movieOutputError"
+        case .unmatchedVideoID: return "unmatchedVideoID"
         }
     }
     
@@ -29,7 +31,7 @@ public enum MovieCacheError: Error, Equatable, CustomStringConvertible {
 }
 
 public class MovieCache: ImageConsumer, AudioEncodingTarget {
-    public typealias Completion = (Result<Bool, MovieCacheError>) -> Void
+    public typealias Completion = (Result<MovieOutput?, MovieCacheError>) -> Void
     public let sources = SourceContainer()
     public let maximumInputs: UInt = 1
     public private(set) var movieOutput: MovieOutput?
@@ -51,6 +53,7 @@ public class MovieCache: ImageConsumer, AudioEncodingTarget {
         guard let movieOutput = movieOutput else { return false }
         return movieOutput.writerStatus == .unknown
     }
+    private var startingVideoID: String?
     
     public init() {
         print("MovieCache init")
@@ -95,21 +98,21 @@ public class MovieCache: ImageConsumer, AudioEncodingTarget {
         }
     }
     
-    public func startWriting(_ completionCallback: Completion? = nil) {
+    public func startWriting(videoID: String?, _ completionCallback: Completion? = nil) {
         MovieOutput.movieProcessingContext.runOperationAsynchronously { [weak self] in
-            self?._startWriting(completionCallback)
+            self?._startWriting(videoID: videoID, completionCallback)
         }
     }
     
-    public func stopWriting(_ completionCallback: ((MovieOutput?, MovieCacheError?) -> Void)? = nil) {
+    public func stopWriting(videoID: String?, _ completionCallback: ((MovieOutput?, MovieCacheError?) -> Void)? = nil) {
         MovieOutput.movieProcessingContext.runOperationAsynchronously { [weak self] in
-            self?._stopWriting(completionCallback)
+            self?._stopWriting(videoID: videoID, completionCallback)
         }
     }
     
-    public func cancelWriting(_ completionCallback: Completion? = nil) {
+    public func cancelWriting(videoID: String?, _ completionCallback: Completion? = nil) {
         MovieOutput.movieProcessingContext.runOperationAsynchronously { [weak self] in
-            self?._cancelWriting(completionCallback)
+            self?._cancelWriting(videoID: videoID, completionCallback)
         }
     }
     
@@ -160,7 +163,7 @@ private extension MovieCache {
         if state == newState {
             // NOTE: for same state, just do nothing and callback
             print("WARNING: Same state transition for:\(state)")
-            errorCallback?(.success(true))
+            errorCallback?(.success(movieOutput))
             return .sameState
         }
         switch (state, newState) {
@@ -206,7 +209,7 @@ private extension MovieCache {
         }
         if let oldMovieOutput = movieOutput, movieOutput?.writerStatus == .writing {
             assertionFailure("MovieOutput is still writing, should not set MovieOutput. state:\(state)")
-            _cancelWriting() { _ in
+            _cancelWriting(videoID: nil) { _ in
                 print("Remove canceled video url:\(oldMovieOutput.url)")
                 try? FileManager.default.removeItem(at: oldMovieOutput.url)
             }
@@ -227,41 +230,52 @@ private extension MovieCache {
             configure?(newMovieOutput)
             if state == .writing {
                 print("it is already writing, start MovieOutput recording immediately")
-                _startMovieOutput(writingCallback)
+                _startMovieOutput(videoID: startingVideoID, writingCallback)
+                startingVideoID = nil
             }
         } catch {
             print("[ERROR] can't create movie output")
         }
     }
     
-    func _startWriting(_ completionCallback: Completion? = nil) {
+    func _startWriting(videoID: String?, _ completionCallback: Completion? = nil) {
         guard _tryTransitingState(to: .writing) == nil else { return }
         guard movieOutput != nil else {
             print("movie output is not ready yet, waiting...")
             writingCallback = completionCallback
+            startingVideoID = videoID
             return
         }
         print("start writing")
-        _startMovieOutput(completionCallback)
+        _startMovieOutput(videoID: videoID, completionCallback)
     }
     
-    func _startMovieOutput(_ completionCallback: Completion? = nil) {
-        movieOutput?.startRecording(sync: true) { _, error in
+    func _startMovieOutput(videoID: String?, _ completionCallback: Completion? = nil) {
+        guard let movieOutput = movieOutput else {
+            completionCallback?(.failure(.emptyMovieOutput))
+            return
+        }
+        movieOutput.videoID = videoID
+        movieOutput.startRecording(sync: true) { _, error in
             if let error = error {
                 completionCallback?(.failure(.movieOutputError(error)))
             } else {
-                completionCallback?(.success(true))
+                completionCallback?(.success(movieOutput))
             }
         }
     }
     
-    func _stopWriting(_ completionCallback: ((MovieOutput?, MovieCacheError?) -> Void)? = nil) {
+    func _stopWriting(videoID: String?, _ completionCallback: ((MovieOutput?, MovieCacheError?) -> Void)? = nil) {
+        guard videoID == movieOutput?.videoID else {
+            completionCallback?(movieOutput, .unmatchedVideoID)
+            return
+        }
         guard _tryTransitingState(to: .stopped) == nil else {
             completionCallback?(movieOutput, .invalidState)
             return
         }
         guard let movieOutput = movieOutput else {
-            completionCallback?(self.movieOutput, .emptyMovieOutput)
+            completionCallback?(nil, .emptyMovieOutput)
             return
         }
         print("stop writing. videoFramebuffers:\(framebufferCache.count) audioSampleBuffers:\(audioSampleBufferCache.count) videoSampleBuffers:\(videoSampleBufferCache.count)")
@@ -276,28 +290,34 @@ private extension MovieCache {
         writingCallback = nil
     }
     
-    func _cancelWriting(_ completionCallback: Completion? = nil) {
+    func _cancelWriting(videoID: String?, _ completionCallback: Completion? = nil) {
+        guard videoID == movieOutput?.videoID else {
+            completionCallback?(.failure(.unmatchedVideoID))
+            return
+        }
         defer {
             movieOutput = nil
             writingCallback = nil
         }
         guard _tryTransitingState(to: .canceled) == nil else { return }
         guard let movieOutput = movieOutput else {
-            completionCallback?(.success(true))
+            completionCallback?(.success(self.movieOutput))
             return
         }
         print("cancel writing")
         movieOutput.cancelRecording(sync: true) {
-            completionCallback?(.success(true))
+            completionCallback?(.success(movieOutput))
         }
     }
     
     func _stopCaching(needsCancel: Bool, _ completionCallback: Completion?) {
+        let movieOutput = self.movieOutput
         if needsCancel && state == .writing {
-            _cancelWriting()
+            _cancelWriting(videoID: nil)
+            startingVideoID = nil
         }
         defer {
-            completionCallback?(.success(true))
+            completionCallback?(.success(movieOutput))
         }
         guard _tryTransitingState(to: .idle) == nil else { return }
         print("stop caching")
