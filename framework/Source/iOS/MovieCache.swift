@@ -229,7 +229,7 @@ private extension MovieCache {
             print("set movie output")
             configure?(newMovieOutput)
             if state == .writing {
-                print("it is already writing, start MovieOutput recording immediately")
+                print("it is already writing, start MovieOutput recording immediately, videoID:\(String(describing: startingVideoID))")
                 _startMovieOutput(videoID: startingVideoID, writingCallback)
                 startingVideoID = nil
             }
@@ -246,7 +246,7 @@ private extension MovieCache {
             startingVideoID = videoID
             return
         }
-        print("start writing")
+        print("start writing, videoID:\(String(describing: videoID))")
         _startMovieOutput(videoID: videoID, completionCallback)
     }
     
@@ -267,6 +267,7 @@ private extension MovieCache {
     
     func _stopWriting(videoID: String?, _ completionCallback: ((MovieOutput?, MovieCacheError?) -> Void)? = nil) {
         guard videoID == movieOutput?.videoID else {
+            print("stopWriting failed. Unmatched videoID:\(String(describing: videoID)) movieOutput?.videoID:\(String(describing: movieOutput?.videoID))")
             completionCallback?(movieOutput, .unmatchedVideoID)
             return
         }
@@ -278,7 +279,7 @@ private extension MovieCache {
             completionCallback?(nil, .emptyMovieOutput)
             return
         }
-        print("stop writing. videoFramebuffers:\(framebufferCache.count) audioSampleBuffers:\(audioSampleBufferCache.count) videoSampleBuffers:\(videoSampleBufferCache.count)")
+        print("stop writing. videoID:\(String(describing: videoID)) videoFramebuffers:\(framebufferCache.count) audioSampleBuffers:\(audioSampleBufferCache.count) videoSampleBuffers:\(videoSampleBufferCache.count)")
         movieOutput.finishRecording(sync: true) {
             if let error = movieOutput.writerError {
                 completionCallback?(movieOutput, .movieOutputError(error))
@@ -292,6 +293,7 @@ private extension MovieCache {
     
     func _cancelWriting(videoID: String?, _ completionCallback: Completion? = nil) {
         guard videoID == movieOutput?.videoID else {
+            print("cancelWriting failed. Unmatched videoID:\(String(describing: videoID)) movieOutput?.videoID:\(String(describing: movieOutput?.videoID))")
             completionCallback?(.failure(.unmatchedVideoID))
             return
         }
@@ -304,7 +306,7 @@ private extension MovieCache {
             completionCallback?(.success(self.movieOutput))
             return
         }
-        print("cancel writing")
+        print("cancel writing, videoID:\(String(describing: videoID))")
         movieOutput.cancelRecording(sync: true) {
             completionCallback?(.success(movieOutput))
         }
