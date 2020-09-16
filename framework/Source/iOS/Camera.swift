@@ -172,12 +172,14 @@ public class Camera: NSObject, ImageSource, AVCaptureVideoDataOutputSampleBuffer
 
         if captureAsYUV {
             supportsFullYUVRange = false
+            #if !targetEnvironment(simulator)
             let supportedPixelFormats = videoOutput.availableVideoPixelFormatTypes
             for currentPixelFormat in supportedPixelFormats {
                 if currentPixelFormat == kCVPixelFormatType_420YpCbCr8BiPlanarFullRange {
                     supportsFullYUVRange = true
                 }
             }
+            #endif
             
             if (supportsFullYUVRange) {
                 yuvConversionShader = crashOnShaderCompileFailure("Camera"){try sharedImageProcessingContext.programForVertexShader(defaultVertexShaderForInputs(2), fragmentShader:YUVConversionFullRangeFragmentShader)}
