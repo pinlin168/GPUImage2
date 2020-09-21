@@ -153,6 +153,7 @@ public class Camera: NSObject, ImageSource, AVCaptureVideoDataOutputSampleBuffer
             }
         }
         
+        captureSession.automaticallyConfiguresCaptureDeviceForWideColor = false
         do {
             self.videoInput = try AVCaptureDeviceInput(device:inputCamera)
         } catch {
