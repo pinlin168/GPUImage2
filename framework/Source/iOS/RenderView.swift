@@ -81,8 +81,17 @@ public class RenderView:UIView, ImageConsumer {
     }
     
     deinit {
-        sharedImageProcessingContext.runOperationSynchronously{
-            destroyDisplayFramebuffer()
+        let strongDisplayFramebuffer = displayFramebuffer
+        let strongDisplayRenderbuffer = displayRenderbuffer
+        sharedImageProcessingContext.runOperationAsynchronously {
+            if let displayFramebuffer = strongDisplayFramebuffer {
+                var temporaryFramebuffer = displayFramebuffer
+                glDeleteFramebuffers(1, &temporaryFramebuffer)
+            }
+            if let displayRenderbuffer = strongDisplayRenderbuffer {
+                var temporaryRenderbuffer = displayRenderbuffer
+                glDeleteRenderbuffers(1, &temporaryRenderbuffer)
+            }
         }
     }
     
