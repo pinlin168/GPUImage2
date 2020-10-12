@@ -417,6 +417,10 @@ public class Camera: NSObject, ImageSource, AVCaptureVideoDataOutputSampleBuffer
             }
         }
     }
+    
+    public func captureOutput(_ output: AVCaptureOutput, didDrop sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        debugPrint("dropped a video frame from camera")
+    }
 
     public func startCapture() {
         self.numberOfFramesCaptured = 0
