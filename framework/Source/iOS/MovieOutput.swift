@@ -99,6 +99,7 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
     public private(set) var cacheBuffersDuration: TimeInterval = 0
     public let disablePixelBufferAttachments: Bool
     private var pixelBufferPoolSemaphore = DispatchSemaphore(value: 1)
+    private var writtenSampleTimes = Set<TimeInterval>()
     
     var synchronizedEncodingDebug = false
     public private(set) var totalVideoFramesAppended = 0
@@ -386,12 +387,6 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
                 return false
             }
             
-            // If two consecutive times with the same value are added to the movie, it aborts recording, so I bail on that case.
-            guard frameTime != previousFrameTime else {
-                print("WARNING: frameTime is as same as previousFrameTIme")
-                return true
-            }
-            
             if previousFrameTime == nil {
                 // This resolves black frames at the beginning. Any samples recieved before this time will be edited out.
                 assetWriter.startSession(atSourceTime: frameTime)
@@ -429,6 +424,10 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
                     videoEncodingIsFinished = true
                 }
             }
+            
+            // If two consecutive times with the same value are added to the movie, it aborts recording, so I bail on that case.
+            guard !_checkSampleTimeDuplicated(frameTime) else { return true }
+            
             let bufferInput = assetWriterPixelBufferInput
             var appendResult = false
             synchronizedEncodingDebugPrint("appending video framebuffer at:\(frameTime.seconds)")
@@ -451,6 +450,20 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
             print("WARNING: Trouble appending pixel buffer \(error)")
             return false
         }
+    }
+    
+    func _checkSampleTimeDuplicated(_ sampleTime: CMTime) -> Bool {
+        let sampleTimeInSeconds = sampleTime.seconds
+        if writtenSampleTimes.contains(sampleTimeInSeconds) {
+            print("WARNING: sampleTime:\(sampleTime) is duplicated, dropped!")
+            return true
+        }
+        // Avoid too large collection
+        if writtenSampleTimes.count > 100 {
+            writtenSampleTimes.removeAll()
+        }
+        writtenSampleTimes.insert(sampleTimeInSeconds)
+        return false
     }
     
     func renderIntoPixelBuffer(_ pixelBuffer:CVPixelBuffer, framebuffer:Framebuffer) throws {
@@ -513,12 +526,6 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
         
         let frameTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
         
-        // If two consecutive times with the same value are added to the movie, it aborts recording, so I bail on that case.
-        guard (frameTime != previousFrameTime) else {
-            print("Cannot get timestamp from framebuffer, dropping frame")
-            return false
-        }
-        
         if previousFrameTime == nil {
             // This resolves black frames at the beginning. Any samples recieved before this time will be edited out.
             let startFrameTime = frameTime
@@ -549,6 +556,10 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
             print("WARNING: video input is not ready at time: \(frameTime))")
             return false
         }
+        
+        // If two consecutive times with the same value are added to the movie, it aborts recording, so I bail on that case.
+        guard !_checkSampleTimeDuplicated(frameTime) else { return true }
+        
         if let ciFilter = ciFilter {
             let originalImage = CIImage(cvPixelBuffer: buffer)
             if let outputImage = ciFilter.applyFilter(on: originalImage), let ciContext = cpuCIContext {
