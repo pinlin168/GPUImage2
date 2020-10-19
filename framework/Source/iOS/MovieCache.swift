@@ -207,12 +207,9 @@ private extension MovieCache {
             print("No need to create MovieOutput")
             return
         }
-        if let oldMovieOutput = movieOutput, movieOutput?.writerStatus == .writing {
-            assertionFailure("MovieOutput is still writing, should not set MovieOutput. state:\(state)")
-            _cancelWriting(videoID: nil) { _ in
-                print("Remove canceled video url:\(oldMovieOutput.url)")
-                try? FileManager.default.removeItem(at: oldMovieOutput.url)
-            }
+        if let currentMovieOutput = movieOutput, movieOutput?.writerStatus == .writing {
+            print("MovieOutput is still writing, skip set MovieOutput. state:\(state) currentURL:\(currentMovieOutput.url) newURL:\(url)")
+            return
         }
         do {
             let newMovieOutput = try MovieOutput(URL: url,
