@@ -570,13 +570,13 @@ private extension MoviePlayer {
         
         delegate?.moviePlayerDidReadPixelBuffer(pixelBuffer, time: timeForDisplay)
         
-        let startTime = CFAbsoluteTimeGetCurrent()
+        let startTime = CACurrentMediaTime()
         if runBenchmark || logEnabled {
             totalFramesSent += 1
         }
         defer {
             if runBenchmark {
-                let currentFrameTime = (CFAbsoluteTimeGetCurrent() - startTime)
+                let currentFrameTime = (CACurrentMediaTime() - startTime)
                 totalFrameTime += currentFrameTime
                 print("[MoviePlayer] Average frame time :\(1000.0 * totalFrameTime / Double(totalFramesSent)) ms")
                 print("[MoviePlayer] Current frame time :\(1000.0 * currentFrameTime) ms")

@@ -483,7 +483,7 @@ public class MovieInput: ImageSource {
         }
         
         if self.runBenchmark {
-            let currentFrameTime = (CFAbsoluteTimeGetCurrent() - startTime)
+            let currentFrameTime = (CACurrentMediaTime() - startTime)
             self.totalFrameTimeDuringCapture += currentFrameTime
             print("Average frame time : \(1000.0 * self.totalFrameTimeDuringCapture / Double(self.totalFramesSent)) ms")
             print("Current frame time : \(1000.0 * currentFrameTime) ms")

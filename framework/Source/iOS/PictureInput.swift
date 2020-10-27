@@ -102,8 +102,6 @@ public class PictureInput: ImageSource {
         }
         
         try sharedImageProcessingContext.runOperationSynchronously{
-            //    CFAbsoluteTime elapsedTime, startTime = CFAbsoluteTimeGetCurrent();
-            
             if (shouldRedrawUsingCoreGraphics) {
                 // For resized or incompatible image: redraw
                 imageData = UnsafeMutablePointer<GLubyte>.allocate(capacity:Int(widthToUseForTexture * heightToUseForTexture) * 4)

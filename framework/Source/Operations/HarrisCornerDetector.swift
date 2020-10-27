@@ -60,7 +60,7 @@ func extractCornersFromImage(_ framebuffer:Framebuffer) -> [Position] {
     let imageByteSize = Int(framebuffer.size.width * framebuffer.size.height * 4)
 //    var rawImagePixels = [UInt8](count:imageByteSize, repeatedValue:0)
     
-//    let startTime = CFAbsoluteTimeGetCurrent()
+//    let startTime = CACurrentMediaTime()
 
     let rawImagePixels = UnsafeMutablePointer<UInt8>.allocate(capacity:imageByteSize)
     // -Onone, [UInt8] array: 30 ms for 720p frame on Retina iMac
@@ -90,7 +90,7 @@ func extractCornersFromImage(_ framebuffer:Framebuffer) -> [Position] {
     
     rawImagePixels.deallocate()
 
-//    print("Harris extraction frame time: \(CFAbsoluteTimeGetCurrent() - startTime)")
+//    print("Harris extraction frame time: \(CACurrentMediaTime() - startTime)")
 
     return corners
 }

@@ -123,7 +123,7 @@ public class Camera: NSObject, ImageSource, AVCaptureVideoDataOutputSampleBuffer
     var numberOfFramesCaptured = 0
     var totalFrameTimeDuringCapture:Double = 0.0
     var framesSinceLastCheck = 0
-    var lastCheckTime = CFAbsoluteTimeGetCurrent()
+    var lastCheckTime = CACurrentMediaTime()
     
     var captureSessionRestartAttempts = 0
 
@@ -324,7 +324,7 @@ public class Camera: NSObject, ImageSource, AVCaptureVideoDataOutputSampleBuffer
                     self.frameRenderingSemaphore.signal()
                 }
             }
-            let startTime = CFAbsoluteTimeGetCurrent()
+            let startTime = CACurrentMediaTime()
             guard let cameraFrame = CMSampleBufferGetImageBuffer(sampleBuffer) else {
                 print("Warning: cannot get imageBuffer")
                 return
@@ -399,7 +399,7 @@ public class Camera: NSObject, ImageSource, AVCaptureVideoDataOutputSampleBuffer
             if self.runBenchmark {
                 self.numberOfFramesCaptured += 1
                 if (self.numberOfFramesCaptured > initialBenchmarkFramesToIgnore) {
-                    let currentFrameTime = (CFAbsoluteTimeGetCurrent() - startTime)
+                    let currentFrameTime = (CACurrentMediaTime() - startTime)
                     self.totalFrameTimeDuringCapture += currentFrameTime
                     print("Average frame time : \(1000.0 * self.totalFrameTimeDuringCapture / Double(self.numberOfFramesCaptured - initialBenchmarkFramesToIgnore)) ms")
                     print("Current frame time : \(1000.0 * currentFrameTime) ms")
@@ -407,8 +407,8 @@ public class Camera: NSObject, ImageSource, AVCaptureVideoDataOutputSampleBuffer
             }
             
             if self.logFPS {
-                if ((CFAbsoluteTimeGetCurrent() - self.lastCheckTime) > 1.0) {
-                    self.lastCheckTime = CFAbsoluteTimeGetCurrent()
+                if ((CACurrentMediaTime() - self.lastCheckTime) > 1.0) {
+                    self.lastCheckTime = CACurrentMediaTime()
                     print("FPS: \(self.framesSinceLastCheck)")
                     self.framesSinceLastCheck = 0
                 }
