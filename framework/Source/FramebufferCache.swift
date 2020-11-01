@@ -27,7 +27,7 @@ public class FramebufferCache {
         let hash = hashForFramebufferWithProperties(orientation:orientation, size:size, textureOnly:textureOnly, minFilter:minFilter, magFilter:magFilter, wrapS:wrapS, wrapT:wrapT, internalFormat:internalFormat, format:format, type:type, stencil:stencil)
         let framebuffer:Framebuffer
         
-        if(framebufferCache.count > 20) {
+        if(framebufferCache.count > 10) {
             print("Warning: Runaway framebuffer cache with size: \(framebufferCache.count)")
         }
         
