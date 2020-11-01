@@ -87,6 +87,7 @@ public class Camera: NSObject, ImageSource, AVCaptureVideoDataOutputSampleBuffer
     public let targets = TargetContainer()
     public weak var delegate: CameraDelegate?
     public let captureSession:AVCaptureSession
+    public var outputBufferSize: GLSize?
     public var inputCamera:AVCaptureDevice!
     public private(set) var videoInput:AVCaptureDeviceInput!
     public let videoOutput:AVCaptureVideoDataOutput!
@@ -372,7 +373,10 @@ public class Camera: NSObject, ImageSource, AVCaptureVideoDataOutputSampleBuffer
                     glTexImage2D(GLenum(GL_TEXTURE_2D), 0, GL_LUMINANCE_ALPHA, GLsizei(bufferWidth / 2), GLsizei(bufferHeight / 2), 0, GLenum(GL_LUMINANCE_ALPHA), GLenum(GL_UNSIGNED_BYTE), CVPixelBufferGetBaseAddressOfPlane(cameraFrame, 1))
                 }
                 
-                cameraFramebuffer = sharedImageProcessingContext.framebufferCache.requestFramebufferWithProperties(orientation:.portrait, size:luminanceFramebuffer.sizeForTargetOrientation(.portrait), textureOnly:false)
+                let inputSize = luminanceFramebuffer.sizeForTargetOrientation(.portrait).gpuSize
+                let outputSize = self.outputBufferSize ?? luminanceFramebuffer.sizeForTargetOrientation(.portrait)
+                let resizeOutput = calculateResizeOutput(inputSize: inputSize, outputSize: self.outputBufferSize?.gpuSize, scaleOutputSizeToFill: false)
+                cameraFramebuffer = sharedImageProcessingContext.framebufferCache.requestFramebufferWithProperties(orientation:.portrait, size:outputSize, textureOnly:false)
                 
                 let conversionMatrix:Matrix3x3
                 if (self.supportsFullYUVRange) {
@@ -380,7 +384,7 @@ public class Camera: NSObject, ImageSource, AVCaptureVideoDataOutputSampleBuffer
                 } else {
                     conversionMatrix = colorConversionMatrix601Default
                 }
-                convertYUVToRGB(shader:self.yuvConversionShader!, luminanceFramebuffer:luminanceFramebuffer, chrominanceFramebuffer:chrominanceFramebuffer, resultFramebuffer:cameraFramebuffer, colorConversionMatrix:conversionMatrix)
+                convertYUVToRGB(shader:self.yuvConversionShader!, luminanceFramebuffer:luminanceFramebuffer, chrominanceFramebuffer:chrominanceFramebuffer, resizeOutput: resizeOutput, resultFramebuffer:cameraFramebuffer, colorConversionMatrix:conversionMatrix)
             } else {
                 cameraFramebuffer = sharedImageProcessingContext.framebufferCache.requestFramebufferWithProperties(orientation:self.location.imageOrientation(), size:GLSize(width:GLint(bufferWidth), height:GLint(bufferHeight)), textureOnly:true)
                 glBindTexture(GLenum(GL_TEXTURE_2D), cameraFramebuffer.texture)

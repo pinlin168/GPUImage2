@@ -21,12 +21,29 @@ public let colorConversionMatrix709Default = Matrix3x3(rowMajorValues:[
     1.793, -0.533,   0.0,
 ])
 
-public func convertYUVToRGB(shader:ShaderProgram, luminanceFramebuffer:Framebuffer, chrominanceFramebuffer:Framebuffer, secondChrominanceFramebuffer:Framebuffer? = nil, resultFramebuffer:Framebuffer, colorConversionMatrix:Matrix3x3) {
+public func convertYUVToRGB(shader:ShaderProgram, luminanceFramebuffer:Framebuffer, chrominanceFramebuffer:Framebuffer, secondChrominanceFramebuffer:Framebuffer? = nil, resizeOutput: ResizeOutputInfo? = nil, resultFramebuffer:Framebuffer, colorConversionMatrix:Matrix3x3) {
     let textureProperties:[InputTextureProperties]
-    if let secondChrominanceFramebuffer = secondChrominanceFramebuffer {
-        textureProperties = [luminanceFramebuffer.texturePropertiesForTargetOrientation(resultFramebuffer.orientation), chrominanceFramebuffer.texturePropertiesForTargetOrientation(resultFramebuffer.orientation), secondChrominanceFramebuffer.texturePropertiesForTargetOrientation(resultFramebuffer.orientation)]
+    let luminanceTextureProperties: InputTextureProperties
+    let chrominanceTextureProperties: InputTextureProperties
+    var secondChrominanceTextureProperties: InputTextureProperties?
+    if let resizeOutput = resizeOutput {
+        luminanceTextureProperties = InputTextureProperties(textureCoordinates:luminanceFramebuffer.orientation.rotationNeededForOrientation(resultFramebuffer.orientation).croppedTextureCoordinates(offsetFromOrigin:resizeOutput.normalizedOffsetFromOrigin, cropSize:resizeOutput.normalizedCropSize), texture:luminanceFramebuffer.texture)
+        chrominanceTextureProperties = InputTextureProperties(textureCoordinates:chrominanceFramebuffer.orientation.rotationNeededForOrientation(resultFramebuffer.orientation).croppedTextureCoordinates(offsetFromOrigin:resizeOutput.normalizedOffsetFromOrigin, cropSize:resizeOutput.normalizedCropSize), texture:chrominanceFramebuffer.texture)
+        if let secondChrominanceFramebuffer = secondChrominanceFramebuffer {
+            secondChrominanceTextureProperties = InputTextureProperties(textureCoordinates:secondChrominanceFramebuffer.orientation.rotationNeededForOrientation(resultFramebuffer.orientation).croppedTextureCoordinates(offsetFromOrigin:resizeOutput.normalizedOffsetFromOrigin, cropSize:resizeOutput.normalizedCropSize), texture:secondChrominanceFramebuffer.texture)
+        }
     } else {
-        textureProperties = [luminanceFramebuffer.texturePropertiesForTargetOrientation(resultFramebuffer.orientation), chrominanceFramebuffer.texturePropertiesForTargetOrientation(resultFramebuffer.orientation)]
+        luminanceTextureProperties = luminanceFramebuffer.texturePropertiesForTargetOrientation(resultFramebuffer.orientation)
+        chrominanceTextureProperties = chrominanceFramebuffer.texturePropertiesForTargetOrientation(resultFramebuffer.orientation)
+        if let secondChrominanceFramebuffer = secondChrominanceFramebuffer {
+            secondChrominanceTextureProperties = secondChrominanceFramebuffer.texturePropertiesForTargetOrientation(resultFramebuffer.orientation)
+        }
+    }
+    
+    if let secondChrominanceFramebuffer = secondChrominanceFramebuffer, let secondChrominanceTextureProperties = secondChrominanceTextureProperties {
+        textureProperties = [luminanceTextureProperties, chrominanceTextureProperties, secondChrominanceTextureProperties]
+    } else {
+        textureProperties = [luminanceTextureProperties, chrominanceTextureProperties]
     }
     resultFramebuffer.activateFramebufferForRendering()
     clearFramebufferWithColor(Color.black)

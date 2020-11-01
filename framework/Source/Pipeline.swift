@@ -134,6 +134,20 @@ public extension ImageConsumer {
         }
         sources.sources.removeAll()
     }
+    
+    func flushWithTinyBuffer(in context: OpenGLContext = sharedImageProcessingContext) {
+        context.runOperationSynchronously {
+            do {
+                for index in 0..<maximumInputs {
+                    let framebuffer = try Framebuffer(context: context, orientation: .portrait, size: GLSize(width: 1, height: 1))
+                    newFramebufferAvailable(framebuffer, fromSourceIndex: index)
+                }
+            } catch {
+                print("Failed to flush 1x1 framebuffer with error:\(error)")
+            }
+            context.framebufferCache.purgeAllUnassignedFramebuffers(sync: true)
+        }
+    }
 }
 
 class WeakImageConsumer {
