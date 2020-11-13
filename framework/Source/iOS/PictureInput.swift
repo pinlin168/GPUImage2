@@ -141,13 +141,13 @@ public class PictureInput: ImageSource {
         
     }
     
-    public convenience init(image:UIImage, smoothlyScaleOutput:Bool = false, orientation:ImageOrientation = .portrait) throws {
-        try self.init(image:image.cgImage!, imageName:"UIImage", smoothlyScaleOutput:smoothlyScaleOutput, orientation:orientation)
+    public convenience init(image:UIImage, smoothlyScaleOutput:Bool = false, orientation:ImageOrientation? = nil) throws {
+        try self.init(image:image.cgImage!, imageName:"UIImage", smoothlyScaleOutput:smoothlyScaleOutput, orientation:orientation ?? image.imageOrientation.gpuOrientation)
     }
     
-    public convenience init(imageName:String, smoothlyScaleOutput:Bool = false, orientation:ImageOrientation = .portrait) throws {
+    public convenience init(imageName:String, smoothlyScaleOutput:Bool = false, orientation:ImageOrientation? = nil) throws {
         guard let image = UIImage(named:imageName) else { throw PictureInputError.noSuchImageError(imageName: imageName) }
-        try self.init(image:image.cgImage!, imageName:imageName, smoothlyScaleOutput:smoothlyScaleOutput, orientation:orientation)
+        try self.init(image:image.cgImage!, imageName:imageName, smoothlyScaleOutput:smoothlyScaleOutput, orientation:orientation ??  image.imageOrientation.gpuOrientation)
     }
     
     deinit {

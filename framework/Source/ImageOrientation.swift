@@ -40,3 +40,20 @@ public enum Rotation {
         }
     }
 }
+
+public extension UIImage.Orientation {
+    var gpuOrientation: ImageOrientation {
+        switch self {
+        case .up, .upMirrored:
+            return .portrait
+        case .down, .downMirrored:
+            return .portraitUpsideDown
+        case .left, .leftMirrored:
+            return .landscapeLeft
+        case .right, .rightMirrored:
+            return .landscapeRight
+        @unknown default:
+            return .portrait
+        }
+    }
+}
