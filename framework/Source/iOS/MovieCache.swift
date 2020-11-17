@@ -73,6 +73,7 @@ public class MovieCache: ImageConsumer, AudioEncodingTarget {
     }
     
     public func setMovieOutputIfNotReady(url: URL,
+                                         fps: Double,
                                          size: Size,
                                          fileType:AVFileType = .mov,
                                          liveVideo:Bool = false,
@@ -85,6 +86,7 @@ public class MovieCache: ImageConsumer, AudioEncodingTarget {
                                          _ configure: ((MovieOutput) -> Void)? = nil) {
         MovieOutput.movieProcessingContext.runOperationAsynchronously { [weak self] in
             self?._setMovieOutputIfNotReady(url: url,
+                                            fps: fps,
                                             size: size,
                                             fileType: fileType,
                                             liveVideo: liveVideo,
@@ -193,6 +195,7 @@ private extension MovieCache {
     }
     
     func _setMovieOutputIfNotReady(url: URL,
+                                   fps: Double,
                                    size: Size,
                                    fileType: AVFileType = .mov,
                                    liveVideo: Bool = false,
@@ -213,6 +216,7 @@ private extension MovieCache {
         }
         do {
             let newMovieOutput = try MovieOutput(URL: url,
+                                                 fps: fps,
                                                  size: size,
                                                  fileType: fileType,
                                                  liveVideo: liveVideo,
