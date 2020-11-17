@@ -169,7 +169,7 @@ public class Framebuffer: Hashable {
     // MARK: -
     // MARK: Framebuffer cache
 
-    weak var cache:FramebufferCache?
+    public weak var cache:FramebufferCache?
     var framebufferRetainCount = 0
     public func lock() {
         framebufferRetainCount += 1

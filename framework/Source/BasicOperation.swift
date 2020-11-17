@@ -144,6 +144,8 @@ open class BasicOperation: ImageProcessingOperation {
                 }
                 
                 framebuffer.unlock()
+            } else if framebuffer.cache != nil {
+                framebuffer.unlock()
             } else {
                 remainingFramebuffers[key] = framebuffer
             }
