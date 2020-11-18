@@ -141,16 +141,16 @@ public class PictureInput: ImageSource {
         
     }
     
-    public convenience init(image:UIImage, size: CGSize? = nil, smoothlyScaleOutput:Bool = false, orientation:ImageOrientation? = nil) throws {
-        try self.init(image:image, name:"UIImage", size: size, smoothlyScaleOutput:smoothlyScaleOutput, orientation:orientation ?? image.imageOrientation.gpuOrientation)
+    public convenience init(image:UIImage, smoothlyScaleOutput:Bool = false, orientation:ImageOrientation? = nil) throws {
+        try self.init(image:image.cgImage!, imageName:"UIImage", smoothlyScaleOutput:smoothlyScaleOutput, orientation:orientation ?? image.imageOrientation.gpuOrientation)
     }
     
-    public convenience init(imageName:String, size: CGSize? = nil, smoothlyScaleOutput:Bool = false, orientation:ImageOrientation? = nil) throws {
+    public convenience init(imageName:String, smoothlyScaleOutput:Bool = false, orientation:ImageOrientation? = nil) throws {
         guard let image = UIImage(named:imageName) else { throw PictureInputError.noSuchImageError(imageName: imageName) }
-        try self.init(image:image, name: imageName, size: size, smoothlyScaleOutput:smoothlyScaleOutput, orientation:orientation ?? image.imageOrientation.gpuOrientation)
+        try self.init(image:image.cgImage!, imageName: imageName, smoothlyScaleOutput:smoothlyScaleOutput, orientation:orientation ?? image.imageOrientation.gpuOrientation)
     }
     
-    public convenience init(image: UIImage, name: String, size: CGSize? = nil, smoothlyScaleOutput: Bool = false, orientation: ImageOrientation? = nil) throws {
+    public convenience init(image: UIImage, size: CGSize?, smoothlyScaleOutput: Bool = false, orientation: ImageOrientation? = nil) throws {
         var targetOrientation = orientation ?? image.imageOrientation.gpuOrientation
         var cgImage: CGImage = image.cgImage!
         if let targetSize = size {
@@ -169,7 +169,7 @@ public class PictureInput: ImageSource {
                 let scaleTransform = CGAffineTransform(scaleX: fillRatio, y: fillRatio)
                 newImage = newImage.transformed(by: scaleTransform)
                 
-                // Crop and generate imag
+                // Crop and generate image
                 let cropRect = CGRect(x: (newImage.extent.size.width - targetSize.width) / 2, y: (newImage.extent.size.height - targetSize.height)/2, width: targetSize.width, height: targetSize.height)
                 
                 let context = CIContext(options: nil)
@@ -177,7 +177,7 @@ public class PictureInput: ImageSource {
                 targetOrientation = orientation ?? .portrait
             }
         }
-        try self.init(image: cgImage, imageName: name, smoothlyScaleOutput: smoothlyScaleOutput, orientation: targetOrientation)
+        try self.init(image: cgImage, imageName: "UIImage", smoothlyScaleOutput: smoothlyScaleOutput, orientation: targetOrientation)
     }
     
     deinit {
