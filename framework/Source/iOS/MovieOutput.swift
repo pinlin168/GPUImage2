@@ -432,12 +432,14 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
                 
                 pixelBuffer = nil
                 pixelBufferPoolSemaphore.wait()
+                defer {
+                    pixelBufferPoolSemaphore.signal()
+                }
                 guard assetWriterPixelBufferInput.pixelBufferPool != nil else {
                     print("MovieOutput WARNING: PixelBufferInput pool is nil")
                     continue
                 }
                 let pixelBufferStatus = CVPixelBufferPoolCreatePixelBuffer(nil, assetWriterPixelBufferInput.pixelBufferPool!, &pixelBuffer)
-                pixelBufferPoolSemaphore.signal()
                 guard pixelBuffer != nil && pixelBufferStatus == kCVReturnSuccess else {
                     print("MovieOutput WARNING: Unable to create pixel buffer, dropping frame")
                     continue
