@@ -683,7 +683,7 @@ public extension AVAsset {
         let trackTransform = videoTrack.preferredTransform
         switch (trackTransform.a, trackTransform.b, trackTransform.c, trackTransform.d) {
         case (1, 0, 0, 1): return .portrait
-        case (1, 0, 0, -1): return .portraitUpsideDown
+        case (1, 0, 0, -1), (-1, 0, 0, -1): return .portraitUpsideDown
         case (0, 1, -1, 0): return .landscapeLeft
         case (0, -1, 1, 0): return .landscapeRight
         default:
@@ -700,7 +700,7 @@ public extension AVAsset {
         let trackTransform = videoTrack.preferredTransform
         switch (trackTransform.a, trackTransform.b, trackTransform.c, trackTransform.d) {
         case (1, 0, 0, 1): return .portrait
-        case (1, 0, 0, -1): return .portraitUpsideDown
+        case (1, 0, 0, -1), (-1, 0, 0, -1): return .portraitUpsideDown
         case (0, 1, -1, 0): return .landscapeRight
         case (0, -1, 1, 0): return .landscapeLeft
         default:
