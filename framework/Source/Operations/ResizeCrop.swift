@@ -10,23 +10,19 @@ public func calculateResizeOutput(inputSize: Size, outputSize: Size?, scaleOutpu
     let normalizedOffsetFromOrigin: Position
 
     if let outputSize = outputSize {
-        let glCropSize: Size
-
         if scaleOutputSizeToFill {
             // finalCropSize won't be resized
             let ratioW = outputSize.width / inputSize.width
             let ratioH = outputSize.height / inputSize.height
             if ratioW > ratioH {
-                glCropSize = Size(width: inputSize.width, height: inputSize.width * (outputSize.height / outputSize.width))
+                finalCropSize = Size(width: inputSize.width, height: inputSize.width * (outputSize.height / outputSize.width))
             } else {
-                glCropSize = Size(width: inputSize.height * (outputSize.width / outputSize.height), height: inputSize.height)
+                finalCropSize = Size(width: inputSize.height * (outputSize.width / outputSize.height), height: inputSize.height)
             }
         } else {
             // finalCropSize might be resized
-            glCropSize = outputSize
+            finalCropSize = outputSize
         }
-
-        finalCropSize = Size(width:min(inputSize.width, glCropSize.width), height:min(inputSize.height, glCropSize.height))
         
         // Scale finalCropSize to inputSize to crop original content
         let aspectFitRatioToOrigin = min(inputSize.width / finalCropSize.width, inputSize.height / finalCropSize.height)
