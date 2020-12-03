@@ -1,7 +1,29 @@
 public struct ResizeOutputInfo {
+    // size in pixel
     let finalCropSize: Size
+    // normalized size within [0, 1] of inputSize
     let normalizedCropSize: Size
+    // normalized offset to [0, 1] of inputSize
     let normalizedOffsetFromOrigin: Position
+}
+
+public func limitedSizeAndRatio(of inputSize: Size, to maxSize: Size) -> ResizeOutputInfo {
+    // Aspect fit maxSize to inputSize to get normalized size and offset
+    let aspectFitRatio = min(inputSize.width / maxSize.width, inputSize.height / maxSize.height)
+    let cropSizeInInput = Size(width: maxSize.width * aspectFitRatio, height: maxSize.height * aspectFitRatio)
+    let normalizedCropSize = Size(width: cropSizeInInput.width / inputSize.width, height: cropSizeInInput.height / inputSize.height)
+    let normalizedOffsetFromOrigin = Position((inputSize.width - cropSizeInInput.width) / 2 / inputSize.width,
+                                              (inputSize.height - cropSizeInInput.height) / 2 / inputSize.height)
+    
+    let finalCropSize: Size
+    if inputSize.width < maxSize.width && inputSize.height < maxSize.height {
+        // inputSize is smaller, use cropSizeInInput as finalCropSize
+        finalCropSize = cropSizeInInput
+    } else {
+        // inputSize is larger, use maxSize as finalCropSize
+        finalCropSize = maxSize
+    }
+    return ResizeOutputInfo(finalCropSize: finalCropSize, normalizedCropSize: normalizedCropSize, normalizedOffsetFromOrigin: normalizedOffsetFromOrigin)
 }
 
 public func calculateResizeOutput(inputSize: Size, outputSize: Size?, scaleOutputSizeToFill: Bool) -> ResizeOutputInfo {

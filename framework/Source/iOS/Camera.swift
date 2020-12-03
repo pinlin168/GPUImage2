@@ -375,8 +375,8 @@ public class Camera: NSObject, ImageSource, AVCaptureVideoDataOutputSampleBuffer
                 
                 let inputSize = luminanceFramebuffer.sizeForTargetOrientation(.portrait).gpuSize
                 let outputSize = self.outputBufferSize ?? luminanceFramebuffer.sizeForTargetOrientation(.portrait)
-                let resizeOutput = calculateResizeOutput(inputSize: inputSize, outputSize: self.outputBufferSize?.gpuSize, scaleOutputSizeToFill: false)
-                cameraFramebuffer = sharedImageProcessingContext.framebufferCache.requestFramebufferWithProperties(orientation:.portrait, size:outputSize, textureOnly:false)
+                let resizeOutput = limitedSizeAndRatio(of: inputSize, to: outputSize.gpuSize)
+                cameraFramebuffer = sharedImageProcessingContext.framebufferCache.requestFramebufferWithProperties(orientation:.portrait, size:GLSize(resizeOutput.finalCropSize), textureOnly:false)
                 
                 let conversionMatrix:Matrix3x3
                 if (self.supportsFullYUVRange) {
