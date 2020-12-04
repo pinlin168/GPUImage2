@@ -334,7 +334,7 @@ extension OperationGroup {
             return obj.debugNameForPipeline
         }
 
-        return "[\(simpleName(self)) -> \(inputImageRelay.debugPipelineDescription)]"
+        return "[\(simpleName(self))(\(inputImageRelay.debugPipelineDescription))]"
     }
 }
 
