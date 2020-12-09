@@ -84,7 +84,7 @@ open class BasicOperation: ImageProcessingOperation {
     // MARK: -
     // MARK: Rendering
     
-    public func newFramebufferAvailable(_ framebuffer:Framebuffer, fromSourceIndex:UInt) {
+    open func newFramebufferAvailable(_ framebuffer:Framebuffer, fromSourceIndex:UInt) {
         if let previousFramebuffer = inputFramebuffers[fromSourceIndex] {
             previousFramebuffer.unlock()
         }
@@ -144,7 +144,7 @@ open class BasicOperation: ImageProcessingOperation {
                 }
                 
                 framebuffer.unlock()
-            } else if framebuffer.cache != nil {
+            } else if framebuffer.shouldReturnToCache && framebuffer.cache != nil {
                 framebuffer.unlock()
             } else {
                 remainingFramebuffers[key] = framebuffer
