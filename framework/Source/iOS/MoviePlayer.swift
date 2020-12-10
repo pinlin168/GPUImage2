@@ -177,8 +177,18 @@ public class MoviePlayer: AVQueuePlayer, ImageSource {
     }
     
     public func seekItem(_ item: AVPlayerItem, to time: CMTime, toleranceBefore: CMTime = .zero, toleranceAfter: CMTime = .zero, completionHandler: ((Bool) -> Void)? = nil) {
-        print("[MoviePlayer] seek item:\(item) to time:\(time.seconds) toleranceBefore:\(toleranceBefore.seconds) toleranceAfter:\(toleranceAfter.seconds)")
-        item.seek(to: time, toleranceBefore: toleranceBefore, toleranceAfter: toleranceAfter, completionHandler: completionHandler)
+        print("[MoviePlayer] [player] seek item:\(item) to time:\(time.seconds) toleranceBefore:\(toleranceBefore.seconds) toleranceAfter:\(toleranceAfter.seconds)")
+        let seekCurrentItem = item != currentItem
+        guard !seekCurrentItem || !isSeeking else { return }
+        if seekCurrentItem {
+            isSeeking = true
+        }
+        item.seek(to: time, toleranceBefore: toleranceBefore, toleranceAfter: toleranceAfter) { [weak self] success in
+            if seekCurrentItem {
+                self?.isSeeking = false
+            }
+            completionHandler?(success)
+        }
         didNotifyEndedItem = nil
     }
     
