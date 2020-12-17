@@ -53,6 +53,7 @@ public class MoviePlayer: AVQueuePlayer, ImageSource {
     var timebaseInfo = mach_timebase_info_data_t()
     var totalFramesSent = 0
     var totalFrameTime: Double = 0.0
+    public var dropFrameBeforeTime: CMTime?
     public var playrate: Float = 1.0
     public var assetDuration: CMTime {
         return asset?.duration ?? .zero
@@ -178,10 +179,11 @@ public class MoviePlayer: AVQueuePlayer, ImageSource {
     
     public func seekItem(_ item: AVPlayerItem, to time: CMTime, toleranceBefore: CMTime = .zero, toleranceAfter: CMTime = .zero, completionHandler: ((Bool) -> Void)? = nil) {
         print("[MoviePlayer] [player] seek item:\(item) to time:\(time.seconds) toleranceBefore:\(toleranceBefore.seconds) toleranceAfter:\(toleranceAfter.seconds)")
-        let seekCurrentItem = item != currentItem
+        let seekCurrentItem = item == currentItem
         guard !seekCurrentItem || !isSeeking else { return }
         if seekCurrentItem {
             isSeeking = true
+            dropFrameBeforeTime = time
         }
         item.seek(to: time, toleranceBefore: toleranceBefore, toleranceAfter: toleranceAfter) { [weak self] success in
             if seekCurrentItem {
@@ -198,6 +200,7 @@ public class MoviePlayer: AVQueuePlayer, ImageSource {
     
     public func replaceCurrentItem(with item: AVPlayerItem?, enableVideoOutput: Bool) {
         didNotifyEndedItem = nil
+        dropFrameBeforeTime = nil
         lastPlayerItem = item
         // Stop looping before replacing
         if shouldUseLooper && MoviePlayer.looperDict[self] != nil {
@@ -328,6 +331,7 @@ public class MoviePlayer: AVQueuePlayer, ImageSource {
         displayLink = nil
         isSeeking = false
         nextSeeking = nil
+        dropFrameBeforeTime = nil
         MoviePlayer.looperDict[self]?.disableLooping()
         MoviePlayer.looperDict[self] = nil
     }
@@ -577,6 +581,15 @@ private extension MoviePlayer {
             print("[MoviePlayer] Skipped frame at time:\(timeForDisplay.seconds) is larger than range: [\(actualStartTime.seconds), \(actualEndTime.seconds)]")
             return
         }
+        
+        // There are still some previous frames coming after seeking. So we drop these frames
+        if let dropFrameBeforeTime = dropFrameBeforeTime, CMTimeCompare(timeForDisplay, dropFrameBeforeTime) <= 0 {
+            print("[MoviePlayer] drop frame at time:\(timeForDisplay.seconds), dropFrameBeforeTime:\(dropFrameBeforeTime.seconds)")
+            return
+        }
+        dropFrameBeforeTime = nil
+        
+//        print("[MoviePlayer] read frame at time:\(timeForDisplay.seconds)")
         
         delegate?.moviePlayerDidReadPixelBuffer(pixelBuffer, time: timeForDisplay)
         
