@@ -188,6 +188,7 @@ public class MoviePlayer: AVQueuePlayer, ImageSource {
         if seekCurrentItem {
             isSeeking = true
             dropFrameBeforeTime = time
+            _setupDisplayLinkIfNeeded()
         }
         item.seek(to: time, toleranceBefore: toleranceBefore, toleranceAfter: toleranceAfter) { [weak self] success in
             if seekCurrentItem {
@@ -353,6 +354,7 @@ public class MoviePlayer: AVQueuePlayer, ImageSource {
         } else {
             nextSeeking = SeekingInfo(time: targetTime, toleranceBefore: .zero, toleranceAfter: .zero, shouldPlayAfterSeeking: shouldPlayAfterSeeking)
         }
+        _setupDisplayLinkIfNeeded()
         if assetDuration <= .zero {
             print("[MoviePlayer] cannot seek since assetDuration is 0. currentItem:\(String(describing: currentItem))")
         } else {
@@ -588,7 +590,7 @@ private extension MoviePlayer {
         }
         
         // There are still some previous frames coming after seeking. So we drop these frames
-        if let dropFrameBeforeTime = dropFrameBeforeTime, CMTimeCompare(timeForDisplay, dropFrameBeforeTime) <= 0 {
+        if isPlaying, let dropFrameBeforeTime = dropFrameBeforeTime, CMTimeCompare(timeForDisplay, dropFrameBeforeTime) <= 0 {
             print("[MoviePlayer] drop frame at time:\(timeForDisplay.seconds), dropFrameBeforeTime:\(dropFrameBeforeTime.seconds)")
             return
         }
