@@ -17,7 +17,8 @@ public class RenderView:UIView, ImageConsumer {
     public var backgroundRenderColor = Color.black
     public var fillMode = FillMode.preserveAspectRatio
     public var orientation:ImageOrientation = .portrait
-    public var sizeInPixels:Size { get { return Size(width:Float(frame.size.width * contentScaleFactor), height:Float(frame.size.height * contentScaleFactor))}}
+    public var cropFrame: CGRect?
+    public var sizeInPixels:Size { Size(width:Float(frame.size.width * contentScaleFactor), height:Float(frame.size.height * contentScaleFactor)) }
     
     public let sources = SourceContainer()
     public let maximumInputs:UInt = 1
@@ -174,7 +175,9 @@ public class RenderView:UIView, ImageConsumer {
     }
     
     public func newFramebufferAvailable(_ framebuffer:Framebuffer, fromSourceIndex:UInt) {
-        let cleanup: () -> Void = {
+        let cleanup: () -> Void = { [weak self] in
+            guard let self = self else { return }
+            
             if(self.delegate?.shouldDisplayNextFramebufferAfterMainThreadLoop() ?? false) {
                 DispatchQueue.main.async {
                     self.delegate?.didDisplayFramebuffer(renderView: self, framebuffer: framebuffer)
@@ -187,7 +190,9 @@ public class RenderView:UIView, ImageConsumer {
             }
         }
         
-        let work: () -> Void = {
+        let work: () -> Void = { [weak self] in
+            guard let self = self else { return }
+            
             // Fix crash when calling OpenGL when app is not foreground
             guard self.isAppForeground else { return }
             
@@ -200,8 +205,22 @@ public class RenderView:UIView, ImageConsumer {
             
             clearFramebufferWithColor(self.backgroundRenderColor)
             
+            let inputTexture: InputTextureProperties
+            // RenderView will discard content outside cropFrame
+            // e.g.: renderView.bounds is (0, 0, 414, 805), the actual content size to be rendered is (420, 805) and will be rendered center aligned
+            // Instead of changing renderView.frame to (-3, 0, 420, 805), we can set cropFrame to (3, 0, 414, 805)
+            if let cropFrame = self.cropFrame, cropFrame != self.bounds {
+                let x: Float = max(0, Float(cropFrame.minX / self.bounds.width))
+                let y: Float = max(0, Float(cropFrame.minY / self.bounds.height))
+                let width: Float = max(0, min(Float(cropFrame.width / self.bounds.width), 1))
+                let height: Float = max(0, min(Float(cropFrame.height / self.bounds.height), 1))
+                inputTexture = InputTextureProperties(textureCoordinates: Rotation.noRotation.croppedTextureCoordinates(offsetFromOrigin: .init(x, y), cropSize: .init(width: width, height: height)), texture: framebuffer.texture)
+            } else {
+                inputTexture = framebuffer.texturePropertiesForTargetOrientation(self.orientation)
+            }
+            
             let scaledVertices = self.fillMode.transformVertices(verticallyInvertedImageVertices, fromInputSize:framebuffer.sizeForTargetOrientation(self.orientation), toFitSize:self.backingSize)
-            renderQuadWithShader(self.displayShader, vertices:scaledVertices, inputTextures:[framebuffer.texturePropertiesForTargetOrientation(self.orientation)])
+            renderQuadWithShader(self.displayShader, vertices:scaledVertices, inputTextures:[inputTexture])
             
             glBindRenderbuffer(GLenum(GL_RENDERBUFFER), self.displayRenderbuffer!)
             
@@ -218,9 +237,7 @@ public class RenderView:UIView, ImageConsumer {
             DispatchQueue.main.async {
                 self.delegate?.willDisplayFramebuffer(renderView: self, framebuffer: framebuffer)
                 
-                sharedImageProcessingContext.runOperationAsynchronously {
-                    work()
-                }
+                sharedImageProcessingContext.runOperationAsynchronously(work)
             }
         }
         else {

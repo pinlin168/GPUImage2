@@ -40,7 +40,7 @@ public func convertYUVToRGB(shader:ShaderProgram, luminanceFramebuffer:Framebuff
         }
     }
     
-    if let secondChrominanceFramebuffer = secondChrominanceFramebuffer, let secondChrominanceTextureProperties = secondChrominanceTextureProperties {
+    if let secondChrominanceTextureProperties = secondChrominanceTextureProperties {
         textureProperties = [luminanceTextureProperties, chrominanceTextureProperties, secondChrominanceTextureProperties]
     } else {
         textureProperties = [luminanceTextureProperties, chrominanceTextureProperties]
