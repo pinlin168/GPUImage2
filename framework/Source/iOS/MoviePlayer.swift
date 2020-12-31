@@ -108,7 +108,11 @@ public class MoviePlayer: AVQueuePlayer, ImageSource {
         guard playerItems.count > 0 else { return nil }
         if didPlayToEnd {
             if playerItems.count == 1 {
-                return nil
+                if actionAtItemEnd == .advance {
+                    return nil
+                } else {
+                    return playerItems[0]
+                }
             } else {
                 return playerItems[1]
             }
@@ -424,6 +428,7 @@ public class MoviePlayer: AVQueuePlayer, ImageSource {
     }
     
     public func setLoopEnabled(_ enabled: Bool, timeRange: CMTimeRange) {
+        print("MoviePlayer set loop enable: \(enabled) time range: \(timeRange)")
         if enabled {
             if previousPlayerActionAtItemEnd == nil {
                 previousPlayerActionAtItemEnd = actionAtItemEnd
