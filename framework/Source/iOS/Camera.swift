@@ -248,14 +248,16 @@ public class Camera: NSObject, ImageSource, AVCaptureVideoDataOutputSampleBuffer
         Camera.updateVideoOutput(location: location, videoOutput: videoOutput, stableMode:stableMode)
     }
     
-    public func configureDeviceInput(location: PhysicalCameraLocation, deviceType: AVCaptureDevice.DeviceType) {
+    public func configureDeviceInput(location: PhysicalCameraLocation, deviceType: AVCaptureDevice.DeviceType, skipConfiguration: Bool = false) {
         guard let device = location.device(deviceType) else {
             fatalError("ERROR: Can't find video devices for \(location)")
         }
         
         do {
             let newVideoInput = try AVCaptureDeviceInput(device: device)
-            captureSession.beginConfiguration()
+            if !skipConfiguration {
+                captureSession.beginConfiguration()
+            }
             
             captureSession.removeInput(videoInput)
             if captureSession.canAddInput(newVideoInput) {
@@ -269,7 +271,9 @@ public class Camera: NSObject, ImageSource, AVCaptureVideoDataOutputSampleBuffer
                 captureSession.addInput(videoInput)
             }
             
-            captureSession.commitConfiguration()
+            if !skipConfiguration {
+                captureSession.commitConfiguration()
+            }
         } catch let error {
             fatalError("ERROR: Could not init device: \(error)")
         }
