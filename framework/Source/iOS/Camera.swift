@@ -98,14 +98,14 @@ public class Camera: NSObject, ImageSource, AVCaptureVideoDataOutputSampleBuffer
     public var deviceType: AVCaptureDevice.DeviceType {
         return inputCamera.deviceType
     }
-    public var backCameraStableMode: AVCaptureVideoStabilizationMode = .standard {
+    public var backCameraStableMode: AVCaptureVideoStabilizationMode? {
         didSet {
             if location == .backFacing {
                 configureStabilization()
             }
         }
     }
-    public var frontCameraStableMode: AVCaptureVideoStabilizationMode = .standard {
+    public var frontCameraStableMode: AVCaptureVideoStabilizationMode? {
         didSet {
             if location != .backFacing {
                 configureStabilization()
@@ -492,7 +492,7 @@ public class Camera: NSObject, ImageSource, AVCaptureVideoDataOutputSampleBuffer
 }
 
 private extension Camera {
-    static func updateVideoOutput(location: PhysicalCameraLocation, videoOutput: AVCaptureOutput, stableMode: AVCaptureVideoStabilizationMode = .standard) {
+    static func updateVideoOutput(location: PhysicalCameraLocation, videoOutput: AVCaptureOutput, stableMode: AVCaptureVideoStabilizationMode? = nil) {
         for connection in videoOutput.connections {
             if connection.isVideoMirroringSupported {
                 connection.isVideoMirrored = (location == .frontFacingMirrored)
@@ -502,7 +502,7 @@ private extension Camera {
                 connection.videoOrientation = .portrait
             }
             
-            if connection.isVideoStabilizationSupported {
+            if let stableMode = stableMode, connection.isVideoStabilizationSupported {
                 connection.preferredVideoStabilizationMode = stableMode
             }
             
