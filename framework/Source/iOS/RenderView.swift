@@ -25,6 +25,7 @@ public class RenderView:UIView, ImageConsumer {
     var displayFramebuffer:GLuint?
     var displayRenderbuffer:GLuint?
     var backingSize = GLSize(width:0, height:0)
+    var renderSize = CGSize.zero
     private var isAppForeground: Bool = true
     
     private lazy var displayShader:ShaderProgram = {
@@ -52,14 +53,14 @@ public class RenderView:UIView, ImageConsumer {
     override public var bounds: CGRect {
         didSet {
             // Check if the size changed
-           destroyFramebufferOnSizeChanged(oldSize: oldValue.size, newSize: self.bounds.size)
+            updateAsSizeChange(oldSize: oldValue.size, newSize: self.bounds.size)
         }
     }
     
     override public var frame: CGRect {
         didSet {
             // Check if the size changed
-            destroyFramebufferOnSizeChanged(oldSize: oldValue.size, newSize: self.frame.size)
+            updateAsSizeChange(oldSize: oldValue.size, newSize: self.frame.size)
         }
     }
     
@@ -79,6 +80,8 @@ public class RenderView:UIView, ImageConsumer {
         }
         
         self.internalLayer = eaglLayer
+        
+        self.renderSize = bounds.size
     }
     
     deinit {
@@ -147,6 +150,19 @@ public class RenderView:UIView, ImageConsumer {
         return true
     }
     
+    func updateAsSizeChange(oldSize: CGSize, newSize: CGSize) {
+        if oldSize == newSize { return }
+        
+        sharedImageProcessingContext.runOperationAsynchronously {
+            self.updateRenderSize(newSize: newSize)
+            self.destroyDisplayFramebuffer()
+        }
+    }
+    
+    func updateRenderSize(newSize: CGSize) {
+        self.renderSize = newSize
+    }
+    
     func destroyDisplayFramebuffer() {
         if let displayFramebuffer = self.displayFramebuffer {
             var temporaryFramebuffer = displayFramebuffer
@@ -157,15 +173,6 @@ public class RenderView:UIView, ImageConsumer {
             var temporaryRenderbuffer = displayRenderbuffer
             glDeleteRenderbuffers(1, &temporaryRenderbuffer)
             self.displayRenderbuffer = nil
-        }
-    }
-    
-    func destroyFramebufferOnSizeChanged(oldSize: CGSize, newSize: CGSize) {
-        if(oldSize != newSize) {
-            // Destroy the displayFramebuffer so we render at the correct size for the next frame
-            sharedImageProcessingContext.runOperationAsynchronously{
-                self.destroyDisplayFramebuffer()
-            }
         }
     }
     
@@ -209,11 +216,11 @@ public class RenderView:UIView, ImageConsumer {
             // RenderView will discard content outside cropFrame
             // e.g.: renderView.bounds is (0, 0, 414, 805), the actual content size to be rendered is (420, 805) and will be rendered center aligned
             // Instead of changing renderView.frame to (-3, 0, 420, 805), we can set cropFrame to (3, 0, 414, 805)
-            if let cropFrame = self.cropFrame, cropFrame != self.bounds {
-                let x: Float = max(0, Float(cropFrame.minX / self.bounds.width))
-                let y: Float = max(0, Float(cropFrame.minY / self.bounds.height))
-                let width: Float = max(0, min(Float(cropFrame.width / self.bounds.width), 1))
-                let height: Float = max(0, min(Float(cropFrame.height / self.bounds.height), 1))
+            if let cropFrame = self.cropFrame, cropFrame != CGRect(origin: .zero, size: self.renderSize) {
+                let x: Float = max(0, Float(cropFrame.minX / self.renderSize.width))
+                let y: Float = max(0, Float(cropFrame.minY / self.renderSize.height))
+                let width: Float = max(0, min(Float(cropFrame.width / self.renderSize.width), 1))
+                let height: Float = max(0, min(Float(cropFrame.height / self.renderSize.height), 1))
                 inputTexture = InputTextureProperties(textureCoordinates: Rotation.noRotation.croppedTextureCoordinates(offsetFromOrigin: .init(x, y), cropSize: .init(width: width, height: height)), texture: framebuffer.texture)
             } else {
                 inputTexture = framebuffer.texturePropertiesForTargetOrientation(self.orientation)
