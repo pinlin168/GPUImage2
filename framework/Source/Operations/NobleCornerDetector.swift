@@ -6,6 +6,6 @@
 
 public class NobleCornerDetector: HarrisCornerDetector {
     public init() {
-        super.init(fragmentShader:NobleCornerDetectorFragmentShader)
+        super.init(fragmentShader: NobleCornerDetectorFragmentShader)
     }
 }

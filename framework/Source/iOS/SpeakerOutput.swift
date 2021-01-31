@@ -12,7 +12,6 @@ import AudioToolbox
 import AVFoundation
 
 public class SpeakerOutput: AudioEncodingTarget {
-    
     public var changesAudioSession = true
     
     public private(set) var isPlaying = false
@@ -30,24 +29,23 @@ public class SpeakerOutput: AudioEncodingTarget {
         }
     }
     
-    var processingGraph:AUGraph?
-    var mixerUnit:AudioUnit?
+    var processingGraph: AUGraph?
+    var mixerUnit: AudioUnit?
     
     var firstBufferReached = false
     
-    let outputBus:AudioUnitElement = 0
-    let inputBus:AudioUnitElement = 1
+    let outputBus: AudioUnitElement = 0
+    let inputBus: AudioUnitElement = 1
     
     let unitSize = UInt32(MemoryLayout<Int16>.size)
-    let bufferUnit:UInt32 = 655360
+    let bufferUnit: UInt32 = 655360
     
     var circularBuffer = TPCircularBuffer()
-    let circularBufferSize:UInt32
+    let circularBufferSize: UInt32
     
-    var rescueBuffer:UnsafeMutableRawPointer?
-    let rescueBufferSize:Int
-    var rescueBufferContentsSize:UInt32 = 0
-
+    var rescueBuffer: UnsafeMutableRawPointer?
+    let rescueBufferSize: Int
+    var rescueBufferContentsSize: UInt32 = 0
     
     public init() {
         circularBufferSize = bufferUnit * unitSize
@@ -70,7 +68,7 @@ public class SpeakerOutput: AudioEncodingTarget {
     // MARK: Playback control
     
     public func start() {
-        if(isPlaying || processingGraph == nil) { return }
+        if isPlaying || processingGraph == nil { return }
         
         AUGraphStart(processingGraph!)
         
@@ -78,7 +76,7 @@ public class SpeakerOutput: AudioEncodingTarget {
     }
     
     public func cancel() {
-        if(!isPlaying || processingGraph == nil) { return }
+        if !isPlaying || processingGraph == nil { return }
         
         AUGraphStop(processingGraph!)
         
@@ -94,12 +92,11 @@ public class SpeakerOutput: AudioEncodingTarget {
     // MARK: AudioEncodingTarget protocol
     
     public func activateAudioTrack() throws {
-        if(changesAudioSession) {
+        if changesAudioSession {
             do {
                 try AVAudioSession.sharedInstance().setCategory(AVAudioSession.Category.ambient)
                 try AVAudioSession.sharedInstance().setActive(true)
-            }
-            catch {
+            } catch {
                 print("ERROR: Unable to set audio session: \(error)")
             }
         }
@@ -144,7 +141,7 @@ public class SpeakerOutput: AudioEncodingTarget {
         // Get a link to the mixer AU so we can talk to it later
         AUGraphNodeInfo(processingGraph!, mixerNode, nil, &mixerUnit)
         
-        var elementCount:UInt32 = 1
+        var elementCount: UInt32 = 1
         AudioUnitSetProperty(mixerUnit!, kAudioUnitProperty_ElementCount, kAudioUnitScope_Input, 0, &elementCount, UInt32(MemoryLayout<UInt32>.size))
         
         // Set output callback, this is how audio sample data will be retrieved
@@ -182,14 +179,14 @@ public class SpeakerOutput: AudioEncodingTarget {
     
     public func processAudioBuffer(_ sampleBuffer: CMSampleBuffer, shouldInvalidateSampleWhenDone: Bool) {
         defer {
-            if(shouldInvalidateSampleWhenDone) {
+            if shouldInvalidateSampleWhenDone {
                 CMSampleBufferInvalidate(sampleBuffer)
             }
         }
         
-        if(!isReadyForMoreMediaData || !isPlaying) { return }
+        if !isReadyForMoreMediaData || !isPlaying { return }
         
-        if(!firstBufferReached) {
+        if !firstBufferReached {
             firstBufferReached = true
             // Get the format information of the sample
             let desc = CMSampleBufferGetFormatDescription(sampleBuffer)!
@@ -216,7 +213,7 @@ public class SpeakerOutput: AudioEncodingTarget {
         
         // Populate an AudioBufferList with the sample
         var audioBufferList = AudioBufferList()
-        var blockBuffer:CMBlockBuffer?
+        var blockBuffer: CMBlockBuffer?
         CMSampleBufferGetAudioBufferListWithRetainedBlockBuffer(sampleBuffer, bufferListSizeNeededOut: nil, bufferListOut: &audioBufferList, bufferListSize: MemoryLayout<AudioBufferList>.size, blockBufferAllocator: nil, blockBufferMemoryAllocator: nil, flags: kCMSampleBufferFlag_AudioBufferList_Assure16ByteAlignment, blockBufferOut: &blockBuffer)
         
         // This is actually doing audioBufferList.mBuffers[0]
@@ -232,14 +229,13 @@ public class SpeakerOutput: AudioEncodingTarget {
         
         // The circular buffer has not been proceseed quickly enough and has filled up.
         // Disable reading any further samples and save this last buffer so we don't lose it.
-        if(!didCopyBytes) {
-            //print("TPCircularBuffer limit reached: \(sampleSize) Bytes")
+        if !didCopyBytes {
+            // print("TPCircularBuffer limit reached: \(sampleSize) Bytes")
             
             isReadyForMoreMediaData = false
             
             self.writeToRescueBuffer(audioBuffer.mData, sampleSize)
-        }
-        else {
+        } else {
             hasBuffer = true
         }
     }
@@ -252,15 +248,14 @@ public class SpeakerOutput: AudioEncodingTarget {
     // MARK: Rescue buffer
     
     func writeToRescueBuffer(_ src: UnsafeRawPointer!, _ size: UInt32) {
-        if(rescueBufferContentsSize > 0) {
+        if rescueBufferContentsSize > 0 {
             print("WARNING: Writing to rescue buffer with contents already inside")
         }
         
-        if(size > rescueBufferSize) {
+        if size > rescueBufferSize {
             print("WARNING: Unable to allocate enought space for rescue buffer, dropping audio sample")
-        }
-        else {
-            if(rescueBuffer == nil) {
+        } else {
+            if rescueBuffer == nil {
                 rescueBuffer = malloc(rescueBufferSize)
             }
             
@@ -270,9 +265,9 @@ public class SpeakerOutput: AudioEncodingTarget {
     }
     
     func copyRescueBufferContentsToCircularBuffer() {
-        if(rescueBufferContentsSize > 0) {
+        if rescueBufferContentsSize > 0 {
             let didCopyBytes = TPCircularBufferProduceBytes(&circularBuffer, rescueBuffer, rescueBufferContentsSize)
-            if(!didCopyBytes) {
+            if !didCopyBytes {
                 print("WARNING: Unable to copy rescue buffer into main buffer, dropping audio sample")
             }
             rescueBufferContentsSize = 0
@@ -281,13 +276,12 @@ public class SpeakerOutput: AudioEncodingTarget {
 }
 
 func playbackCallback(
-    inRefCon:UnsafeMutableRawPointer,
-    ioActionFlags:UnsafeMutablePointer<AudioUnitRenderActionFlags>,
-    inTimeStamp:UnsafePointer<AudioTimeStamp>,
-    inBusNumber:UInt32,
-    inNumberFrames:UInt32,
-    ioData:UnsafeMutablePointer<AudioBufferList>?) -> OSStatus {
-    
+    inRefCon: UnsafeMutableRawPointer,
+    ioActionFlags: UnsafeMutablePointer<AudioUnitRenderActionFlags>,
+    inTimeStamp: UnsafePointer<AudioTimeStamp>,
+    inBusNumber: UInt32,
+    inNumberFrames: UInt32,
+    ioData: UnsafeMutablePointer<AudioBufferList>?) -> OSStatus {
     let audioBuffer = ioData!.pointee.mBuffers
     let numberOfChannels = audioBuffer.mNumberChannels
     let outSamples = audioBuffer.mData
@@ -297,25 +291,25 @@ func playbackCallback(
     
     let p = bridgeRawPointer(inRefCon) as! SpeakerOutput
     
-    if(p.hasBuffer && p.isPlaying) {
-        var availableBytes:UInt32 = 0
+    if p.hasBuffer && p.isPlaying {
+        var availableBytes: UInt32 = 0
         let bufferTail = TPCircularBufferTail(&p.circularBuffer, &availableBytes)
         
         let requestedBytesSize = inNumberFrames * p.unitSize * numberOfChannels
         
         let bytesToRead = min(availableBytes, requestedBytesSize)
-        if(!p.isMuted) {
+        if !p.isMuted {
             // Copy the bytes from the circular buffer into the outSample
             memcpy(outSamples, bufferTail, Int(bytesToRead))
         }
         // Clear what we just read out of the circular buffer
         TPCircularBufferConsume(&p.circularBuffer, bytesToRead)
         
-        if(availableBytes <= requestedBytesSize*2) {
+        if availableBytes <= requestedBytesSize * 2 {
             p.isReadyForMoreMediaData = true
         }
         
-        if(availableBytes <= requestedBytesSize) {
+        if availableBytes <= requestedBytesSize {
             p.hasBuffer = false
         }
     }
@@ -323,11 +317,10 @@ func playbackCallback(
     return noErr
 }
 
-func bridgeObject(_ obj : AnyObject) -> UnsafeMutableRawPointer {
+func bridgeObject(_ obj: AnyObject) -> UnsafeMutableRawPointer {
     return UnsafeMutableRawPointer(Unmanaged.passUnretained(obj).toOpaque())
 }
 
-func bridgeRawPointer(_ ptr : UnsafeMutableRawPointer) -> AnyObject {
+func bridgeRawPointer(_ ptr: UnsafeMutableRawPointer) -> AnyObject {
     return Unmanaged.fromOpaque(ptr).takeUnretainedValue()
 }
-

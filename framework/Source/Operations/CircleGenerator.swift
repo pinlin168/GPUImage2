@@ -13,15 +13,15 @@
 #endif
 
 public class CircleGenerator: ImageGenerator {
-    let circleShader:ShaderProgram
+    let circleShader: ShaderProgram
     
-    public override init(size:Size) {
-        circleShader = crashOnShaderCompileFailure("CircleGenerator"){try sharedImageProcessingContext.programForVertexShader(CircleVertexShader, fragmentShader:CircleFragmentShader)}
+    public override init(size: Size) {
+        circleShader = crashOnShaderCompileFailure("CircleGenerator") { try sharedImageProcessingContext.programForVertexShader(CircleVertexShader, fragmentShader: CircleFragmentShader) }
         circleShader.colorUniformsUseFourComponents = true
-        super.init(size:size)
+        super.init(size: size)
     }
 
-    public func renderCircleOfRadius(_ radius:Float, center:Position, circleColor:Color = Color.white, backgroundColor:Color = Color.black) {
+    public func renderCircleOfRadius(_ radius: Float, center: Position, circleColor: Color = Color.white, backgroundColor: Color = Color.black) {
         let scaledRadius = radius * 2.0
         imageFramebuffer.activateFramebufferForRendering()
         var uniformSettings = ShaderUniformSettings()
@@ -35,7 +35,7 @@ public class CircleGenerator: ImageGenerator {
         let scaledYRadius = scaledRadius / imageFramebuffer.aspectRatioForRotation(.noRotation)
 
         uniformSettings["center"] = Position(convertedCenterX, convertedCenterY)
-        let circleVertices:[GLfloat] = [GLfloat(convertedCenterX - scaledRadius), GLfloat(convertedCenterY - scaledYRadius), GLfloat(convertedCenterX + scaledRadius), GLfloat(convertedCenterY - scaledYRadius), GLfloat(convertedCenterX - scaledRadius), GLfloat(convertedCenterY + scaledYRadius), GLfloat(convertedCenterX + scaledRadius), GLfloat(convertedCenterY + scaledYRadius)]
+        let circleVertices: [GLfloat] = [GLfloat(convertedCenterX - scaledRadius), GLfloat(convertedCenterY - scaledYRadius), GLfloat(convertedCenterX + scaledRadius), GLfloat(convertedCenterY - scaledYRadius), GLfloat(convertedCenterX - scaledRadius), GLfloat(convertedCenterY + scaledYRadius), GLfloat(convertedCenterX + scaledRadius), GLfloat(convertedCenterY + scaledYRadius)]
         
         clearFramebufferWithColor(backgroundColor)
         circleShader.use()

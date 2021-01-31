@@ -12,12 +12,11 @@ public class AmatorkaFilter: LookupFilter {
         super.init()
         
         do {
-            try ({lookupImage = try PictureInput(imageName:"lookup_amatorka.png")})()
-        }
-        catch {
+            try ({ lookupImage = try PictureInput(imageName: "lookup_amatorka.png") })()
+        } catch {
             print("ERROR: Unable to create PictureInput \(error)")
         }
-        ({intensity = 1.0})()
+        ({ intensity = 1.0 })()
     }
 }
 #endif

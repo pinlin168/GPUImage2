@@ -2,13 +2,13 @@ import COpenGLES.gles2
 import CVideoCore
 
 public class OpenGLContext: SerialDispatch {
-    lazy var framebufferCache:FramebufferCache = {
-        return FramebufferCache(context:self)
+    lazy var framebufferCache: FramebufferCache = {
+        return FramebufferCache(context: self)
     }()
-    var shaderCache:[String:ShaderProgram] = [:]
+    var shaderCache: [String: ShaderProgram] = [:]
     
-    lazy var passthroughShader:ShaderProgram = {
-        return crashOnShaderCompileFailure("OpenGLContext"){return try self.programForVertexShader(OneInputVertexShader, fragmentShader:PassthroughFragmentShader)}
+    lazy var passthroughShader: ShaderProgram = {
+        return crashOnShaderCompileFailure("OpenGLContext") { return try self.programForVertexShader(OneInputVertexShader, fragmentShader: PassthroughFragmentShader) }
     }()
 	
     // MARK: -
@@ -33,25 +33,25 @@ public class OpenGLContext: SerialDispatch {
     // MARK: -
     // MARK: Device capabilities
     
-    public var maximumTextureSizeForThisDevice:GLint {get { return _maximumTextureSizeForThisDevice } }
-    private lazy var _maximumTextureSizeForThisDevice:GLint = {
+    public var maximumTextureSizeForThisDevice: GLint { get { return _maximumTextureSizeForThisDevice } }
+    private lazy var _maximumTextureSizeForThisDevice: GLint = {
         return self.openGLDeviceSettingForOption(GL_MAX_TEXTURE_SIZE)
     }()
     
-    public var maximumTextureUnitsForThisDevice:GLint {get { return _maximumTextureUnitsForThisDevice } }
-    private lazy var _maximumTextureUnitsForThisDevice:GLint = {
+    public var maximumTextureUnitsForThisDevice: GLint { get { return _maximumTextureUnitsForThisDevice } }
+    private lazy var _maximumTextureUnitsForThisDevice: GLint = {
         return self.openGLDeviceSettingForOption(GL_MAX_TEXTURE_IMAGE_UNITS)
     }()
     
-    public var maximumVaryingVectorsForThisDevice:GLint {get { return _maximumVaryingVectorsForThisDevice } }
-    private lazy var _maximumVaryingVectorsForThisDevice:GLint = {
+    public var maximumVaryingVectorsForThisDevice: GLint { get { return _maximumVaryingVectorsForThisDevice } }
+    private lazy var _maximumVaryingVectorsForThisDevice: GLint = {
         return self.openGLDeviceSettingForOption(GL_MAX_VARYING_VECTORS)
     }()
     
-    lazy var extensionString:String = {
-        return self.runOperationSynchronously{
+    lazy var extensionString: String = {
+        return self.runOperationSynchronously {
             self.makeCurrentContext()
-            return String(cString:unsafeBitCast(glGetString(GLenum(GL_EXTENSIONS)), to:UnsafePointer<CChar>.self))
+            return String(cString: unsafeBitCast(glGetString(GLenum(GL_EXTENSIONS)), to: UnsafePointer<CChar>.self))
         }
     }()
 }

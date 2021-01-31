@@ -71,7 +71,7 @@ public class MoviePlayer: AVQueuePlayer, ImageSource {
     }
     public var hasTarget: Bool { targets.count > 0 }
     
-    var framebufferUserInfo: [AnyHashable:Any]?
+    var framebufferUserInfo: [AnyHashable: Any]?
     var observations = [NSKeyValueObservation]()
     
     struct SeekingInfo: Equatable {
@@ -100,7 +100,7 @@ public class MoviePlayer: AVQueuePlayer, ImageSource {
     }
     private var didTriggerEndTimeObserver = false
     private var didRegisterPlayerNotification = false
-    private var didNotifyEndedItem: AVPlayerItem? = nil
+    private var didNotifyEndedItem: AVPlayerItem?
     private var retryPlaying = false
     /// Return the current item. If currentItem was played to end, will return next one
     public var actualCurrentItem: AVPlayerItem? {
@@ -374,7 +374,7 @@ public class MoviePlayer: AVQueuePlayer, ImageSource {
         // https://developer.apple.com/library/archive/qa/qa1820/_index.html#//apple_ref/doc/uid/DTS40016828    
         guard !isSeeking, let seekingInfo = nextSeeking, isReadyToPlay else { return }
         isSeeking = true
-        seek(to: seekingInfo.time, toleranceBefore:seekingInfo.toleranceBefore, toleranceAfter: seekingInfo.toleranceAfter) { [weak self] success in
+        seek(to: seekingInfo.time, toleranceBefore: seekingInfo.toleranceBefore, toleranceAfter: seekingInfo.toleranceAfter) { [weak self] _ in
 //            debugPrint("movie player did seek to time:\(seekingInfo.time.seconds) success:\(success) shouldPlayAfterSeeking:\(seekingInfo.shouldPlayAfterSeeking)")
             guard let self = self else { return }
             if seekingInfo.shouldPlayAfterSeeking && self.isPlaying {
@@ -401,7 +401,7 @@ public class MoviePlayer: AVQueuePlayer, ImageSource {
         _timeObserversUpdate { [weak self] in
             guard let self = self else { return }
             self.totalTimeObservers.append(timeObserver)
-            self.totalTimeObservers = self.totalTimeObservers.sorted { (lhs, rhs) in
+            self.totalTimeObservers = self.totalTimeObservers.sorted { lhs, rhs in
                 return lhs.targetTime > rhs.targetTime
             }
             if self.isPlaying {
@@ -480,7 +480,7 @@ private extension MoviePlayer {
     
     func _setupPlayerItemVideoOutput(for item: AVPlayerItem) {
         guard !item.outputs.contains(where: { $0 is AVPlayerItemVideoOutput }) else { return }
-        let outputSettings = [String(kCVPixelBufferPixelFormatTypeKey) : kCVPixelFormatType_420YpCbCr8BiPlanarFullRange]
+        let outputSettings = [String(kCVPixelBufferPixelFormatTypeKey): kCVPixelFormatType_420YpCbCr8BiPlanarFullRange]
         let videoOutput = AVPlayerItemVideoOutput(outputSettings: outputSettings)
         videoOutput.suppressesPlayerRendering = true
         item.add(videoOutput)
@@ -667,7 +667,7 @@ private extension MoviePlayer {
         guard (notification.object as? AVPlayerItem) == currentItem else { return }
         didNotifyEndedItem = currentItem
         if needAddItemAfterDidEndNotify {
-            DispatchQueue.main.async() { [weak self] in
+            DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
                 self.needAddItemAfterDidEndNotify = false
                 self.pendingNewItems.forEach { self.insert($0, after: nil) }
@@ -677,7 +677,7 @@ private extension MoviePlayer {
                 }
             }
         } else {
-            DispatchQueue.main.async() { [weak self] in
+            DispatchQueue.main.async { [weak self] in
                 self?.onCurrentItemPlayToEnd()
             }
         }

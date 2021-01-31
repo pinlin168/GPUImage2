@@ -1,35 +1,35 @@
 import XCTest
-//@testable import GPUImage
+// @testable import GPUImage
 
 class FakeOperation: ImageProcessingOperation {
     let targets = TargetContainer()
     let sources = SourceContainer()
-    var maximumInputs:UInt { get { return 1 } } // Computed property, so it can be overridden
-    let name:String
+    var maximumInputs: UInt { get { return 1 } } // Computed property, so it can be overridden
+    let name: String
     
-    init(name:String) {
+    init(name: String) {
         self.name = name
     }
     
-    func newFramebufferAvailable(_ framebuffer:Framebuffer, fromSourceIndex:UInt) {
+    func newFramebufferAvailable(_ framebuffer: Framebuffer, fromSourceIndex: UInt) {
     }
 
-    func transmitPreviousImage(to target:ImageConsumer, atIndex:UInt) {
+    func transmitPreviousImage(to target: ImageConsumer, atIndex: UInt) {
     }
 }
 
 class FakeRenderView: ImageConsumer {
     let sources = SourceContainer()
-    let maximumInputs:UInt = 1
+    let maximumInputs: UInt = 1
     
-    func newFramebufferAvailable(_ framebuffer:Framebuffer, fromSourceIndex:UInt) {
+    func newFramebufferAvailable(_ framebuffer: Framebuffer, fromSourceIndex: UInt) {
     }
 }
 
 class FakeCamera: ImageSource {
     let targets = TargetContainer()
     
-    func transmitPreviousImage(to target:ImageConsumer, atIndex:UInt) {
+    func transmitPreviousImage(to target: ImageConsumer, atIndex: UInt) {
     }
     
     func newCameraFrame() {
@@ -46,19 +46,18 @@ class FakeCamera: ImageSource {
 }
 
 class Pipeline_Tests: XCTestCase {
-    
     func testTargetContainer() {
         let targetContainer = TargetContainer()
         
         // All operations have been added and should have a strong reference
-        var operation1:FakeOperation? = FakeOperation(name:"Operation 1")
-        targetContainer.append(operation1!, indexAtTarget:0)
-        var operation2:FakeOperation? = FakeOperation(name:"Operation 2")
-        targetContainer.append(operation2!, indexAtTarget:0)
-        var operation3:FakeOperation? = FakeOperation(name:"Operation 3")
-        targetContainer.append(operation3!, indexAtTarget:0)
-        var operation4:FakeOperation? = FakeOperation(name:"Operation 4")
-        targetContainer.append(operation4!, indexAtTarget:0)
+        var operation1: FakeOperation? = FakeOperation(name: "Operation 1")
+        targetContainer.append(operation1!, indexAtTarget: 0)
+        var operation2: FakeOperation? = FakeOperation(name: "Operation 2")
+        targetContainer.append(operation2!, indexAtTarget: 0)
+        var operation3: FakeOperation? = FakeOperation(name: "Operation 3")
+        targetContainer.append(operation3!, indexAtTarget: 0)
+        var operation4: FakeOperation? = FakeOperation(name: "Operation 4")
+        targetContainer.append(operation4!, indexAtTarget: 0)
 
         for (index, (target, _)) in targetContainer.enumerated() {
             let operation = target as! FakeOperation
@@ -101,7 +100,6 @@ class Pipeline_Tests: XCTestCase {
     }
     
     func testSourceContainer() {
-        
     }
     
     func testChaining() {

@@ -4,23 +4,22 @@ import CoreAudio
 import AVFoundation
 
 class ViewController: UIViewController {
-    
     @IBOutlet weak var renderView: RenderView!
     
-    var movie:MovieInput!
-    var filter:Pixellate!
-    var speaker:SpeakerOutput!
+    var movie: MovieInput!
+    var filter: Pixellate!
+    var speaker: SpeakerOutput!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         let bundleURL = Bundle.main.resourceURL!
-        let movieURL = URL(string:"sample_iPod.m4v", relativeTo:bundleURL)!
+        let movieURL = URL(string: "sample_iPod.m4v", relativeTo: bundleURL)!
         
         do {
-            let audioDecodeSettings = [AVFormatIDKey:kAudioFormatLinearPCM]
+            let audioDecodeSettings = [AVFormatIDKey: kAudioFormatLinearPCM]
             
-            movie = try MovieInput(url:movieURL, playAtActualSpeed:true, loop:true, audioSettings:audioDecodeSettings)
+            movie = try MovieInput(url: movieURL, playAtActualSpeed: true, loop: true, audioSettings: audioDecodeSettings)
             speaker = SpeakerOutput()
             movie.audioEncodingTarget = speaker
             
@@ -54,4 +53,3 @@ class ViewController: UIViewController {
         speaker.start()
     }
 }
-

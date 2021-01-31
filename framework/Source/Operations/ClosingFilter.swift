@@ -1,5 +1,5 @@
 public class ClosingFilter: OperationGroup {
-    public var radius:UInt {
+    public var radius: UInt {
         didSet {
             erosion.radius = radius
             dilation.radius = radius
@@ -12,7 +12,7 @@ public class ClosingFilter: OperationGroup {
         radius = 1
         super.init()
         
-        self.configureGroup{input, output in
+        self.configureGroup {input, output in
             input --> self.dilation --> self.erosion --> output
         }
     }

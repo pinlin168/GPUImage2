@@ -64,7 +64,7 @@ public class CILookupFilter {
 public extension CIFilter {
     static func filter(with lutUIImage: UIImage) -> CIFilter? {
         guard let lutCGImage = lutUIImage.cgImage else {
-            print("ERROR: Invalid colorLUT");
+            print("ERROR: Invalid colorLUT")
             return nil
         }
         let size = 64
@@ -74,11 +74,11 @@ public extension CIFilter {
         let columnCount = lutWidth / size
 
         guard lutWidth % size == 0 && lutHeight % size == 0 && rowCount * columnCount == size else {
-            print("ERROR: Invalid colorLUT image size, width:\(lutWidth) height:\(lutHeight)");
+            print("ERROR: Invalid colorLUT image size, width:\(lutWidth) height:\(lutHeight)")
             return nil
         }
 
-        guard let bitmap  = getBytesFromImage(image: lutUIImage) else {
+        guard let bitmap = getBytesFromImage(image: lutUIImage) else {
             print("ERROR: Cannot get byte from image")
             return nil
         }
@@ -94,9 +94,9 @@ public extension CIFilter {
                 for _ in 0 ..< columnCount {
                     for x in 0 ..< size {
                         let alpha = Float(bitmap[bitmapOffset]) / 255.0
-                        let red = Float(bitmap[bitmapOffset+1]) / 255.0
-                        let green = Float(bitmap[bitmapOffset+2]) / 255.0
-                        let blue = Float(bitmap[bitmapOffset+3]) / 255.0
+                        let red = Float(bitmap[bitmapOffset + 1]) / 255.0
+                        let green = Float(bitmap[bitmapOffset + 2]) / 255.0
+                        let blue = Float(bitmap[bitmapOffset + 3]) / 255.0
 
                         let dataOffset = (z * size * size + y * size + x) * 4
 

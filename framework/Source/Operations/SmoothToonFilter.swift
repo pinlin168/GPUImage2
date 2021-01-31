@@ -9,11 +9,11 @@ public class SmoothToonFilter: OperationGroup {
     public override init() {
         super.init()
 
-        ({blurRadiusInPixels = 2.0})()
-        ({threshold = 0.2})()
-        ({quantizationLevels = 10.0})()
+        ({ blurRadiusInPixels = 2.0 })()
+        ({ threshold = 0.2 })()
+        ({ quantizationLevels = 10.0 })()
 
-        self.configureGroup{input, output in
+        self.configureGroup {input, output in
             input --> self.gaussianBlur --> self.toonFilter --> output
         }
     }

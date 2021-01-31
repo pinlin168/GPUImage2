@@ -13,24 +13,24 @@
  */
 
 public class CannyEdgeDetection: OperationGroup {
-    public var blurRadiusInPixels:Float = 2.0 { didSet { gaussianBlur.blurRadiusInPixels = blurRadiusInPixels } }
-    public var upperThreshold:Float = 0.4 { didSet { directionalNonMaximumSuppression.uniformSettings["upperThreshold"] = upperThreshold } }
-    public var lowerThreshold:Float = 0.1 { didSet { directionalNonMaximumSuppression.uniformSettings["lowerThreshold"] = lowerThreshold } }
+    public var blurRadiusInPixels: Float = 2.0 { didSet { gaussianBlur.blurRadiusInPixels = blurRadiusInPixels } }
+    public var upperThreshold: Float = 0.4 { didSet { directionalNonMaximumSuppression.uniformSettings["upperThreshold"] = upperThreshold } }
+    public var lowerThreshold: Float = 0.1 { didSet { directionalNonMaximumSuppression.uniformSettings["lowerThreshold"] = lowerThreshold } }
     
     let luminance = Luminance()
     let gaussianBlur = SingleComponentGaussianBlur()
-    let directionalSobel = TextureSamplingOperation(fragmentShader:DirectionalSobelEdgeDetectionFragmentShader)
-    let directionalNonMaximumSuppression = TextureSamplingOperation(vertexShader:OneInputVertexShader, fragmentShader:DirectionalNonMaximumSuppressionFragmentShader)
-    let weakPixelInclusion = TextureSamplingOperation(fragmentShader:WeakPixelInclusionFragmentShader)
+    let directionalSobel = TextureSamplingOperation(fragmentShader: DirectionalSobelEdgeDetectionFragmentShader)
+    let directionalNonMaximumSuppression = TextureSamplingOperation(vertexShader: OneInputVertexShader, fragmentShader: DirectionalNonMaximumSuppressionFragmentShader)
+    let weakPixelInclusion = TextureSamplingOperation(fragmentShader: WeakPixelInclusionFragmentShader)
     
     public override init() {
         super.init()
         
-        ({blurRadiusInPixels = 2.0})()
-        ({upperThreshold = 0.4})()
-        ({lowerThreshold = 0.1})()
+        ({ blurRadiusInPixels = 2.0 })()
+        ({ upperThreshold = 0.4 })()
+        ({ lowerThreshold = 0.1 })()
         
-        self.configureGroup{input, output in
+        self.configureGroup {input, output in
             input --> self.luminance --> self.gaussianBlur --> self.directionalSobel --> self.directionalNonMaximumSuppression --> self.weakPixelInclusion --> output
         }
     }

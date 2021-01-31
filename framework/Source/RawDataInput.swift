@@ -33,11 +33,10 @@ public class RawDataInput: ImageSource {
     public let targets = TargetContainer()
     
     public init() {
-        
     }
 
-    public func uploadBytes(_ bytes:[UInt8], size:Size, pixelFormat:PixelFormat, orientation:ImageOrientation = .portrait) {
-        let dataFramebuffer = sharedImageProcessingContext.framebufferCache.requestFramebufferWithProperties(orientation:orientation, size:GLSize(size), textureOnly:true, internalFormat:pixelFormat.toGL(), format:pixelFormat.toGL())
+    public func uploadBytes(_ bytes: [UInt8], size: Size, pixelFormat: PixelFormat, orientation: ImageOrientation = .portrait) {
+        let dataFramebuffer = sharedImageProcessingContext.framebufferCache.requestFramebufferWithProperties(orientation: orientation, size: GLSize(size), textureOnly: true, internalFormat: pixelFormat.toGL(), format: pixelFormat.toGL())
 
         glActiveTexture(GLenum(GL_TEXTURE1))
         glBindTexture(GLenum(GL_TEXTURE_2D), dataFramebuffer.texture)
@@ -46,7 +45,7 @@ public class RawDataInput: ImageSource {
         updateTargetsWithFramebuffer(dataFramebuffer)
     }
     
-    public func transmitPreviousImage(to target:ImageConsumer, atIndex:UInt) {
+    public func transmitPreviousImage(to target: ImageConsumer, atIndex: UInt) {
         // TODO: Determine if this is necessary for the raw data uploads
     }
 }

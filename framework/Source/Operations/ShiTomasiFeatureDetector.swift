@@ -6,6 +6,6 @@
 
 public class ShiTomasiFeatureDetector: HarrisCornerDetector {
     public init() {
-        super.init(fragmentShader:ShiTomasiFeatureDetectorFragmentShader)
+        super.init(fragmentShader: ShiTomasiFeatureDetectorFragmentShader)
     }
 }

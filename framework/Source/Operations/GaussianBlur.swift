@@ -6,13 +6,13 @@ let M_PI = 3.14159265359 // TODO: remove this once Foundation pulls this in on L
 import Foundation
 
 public class GaussianBlur: TwoStageOperation {
-    public var blurRadiusInPixels:Float {
+    public var blurRadiusInPixels: Float {
         didSet {
-            let (sigma, downsamplingFactor) = sigmaAndDownsamplingForBlurRadius(blurRadiusInPixels, limit:8.0, override:overrideDownsamplingOptimization)
+            let (sigma, downsamplingFactor) = sigmaAndDownsamplingForBlurRadius(blurRadiusInPixels, limit: 8.0, override: overrideDownsamplingOptimization)
             sharedImageProcessingContext.runOperationAsynchronously {
                 self.downsamplingFactor = downsamplingFactor
                 let pixelRadius = pixelRadiusForBlurSigma(Double(sigma))
-                self.shader = crashOnShaderCompileFailure("GaussianBlur"){try sharedImageProcessingContext.programForVertexShader(vertexShaderForOptimizedGaussianBlurOfRadius(pixelRadius, sigma:Double(sigma), luminanceThreshold: self.luminanceThreshold), fragmentShader:fragmentShaderForOptimizedGaussianBlurOfRadius(pixelRadius, sigma:Double(sigma), luminanceThreshold: self.luminanceThreshold))}
+                self.shader = crashOnShaderCompileFailure("GaussianBlur") { try sharedImageProcessingContext.programForVertexShader(vertexShaderForOptimizedGaussianBlurOfRadius(pixelRadius, sigma: Double(sigma), luminanceThreshold: self.luminanceThreshold), fragmentShader: fragmentShaderForOptimizedGaussianBlurOfRadius(pixelRadius, sigma: Double(sigma), luminanceThreshold: self.luminanceThreshold)) }
             }
         }
     }
@@ -21,11 +21,11 @@ public class GaussianBlur: TwoStageOperation {
         didSet {
             guard luminanceThreshold != oldValue else { return }
             uniformSettings["luminanceThreshold"] = luminanceThreshold
-            let (sigma, downsamplingFactor) = sigmaAndDownsamplingForBlurRadius(blurRadiusInPixels, limit:8.0, override:overrideDownsamplingOptimization)
+            let (sigma, downsamplingFactor) = sigmaAndDownsamplingForBlurRadius(blurRadiusInPixels, limit: 8.0, override: overrideDownsamplingOptimization)
             sharedImageProcessingContext.runOperationAsynchronously {
                 self.downsamplingFactor = downsamplingFactor
                 let pixelRadius = pixelRadiusForBlurSigma(Double(sigma))
-                self.shader = crashOnShaderCompileFailure("GaussianBlur"){try sharedImageProcessingContext.programForVertexShader(vertexShaderForOptimizedGaussianBlurOfRadius(pixelRadius, sigma:Double(sigma), luminanceThreshold: self.luminanceThreshold), fragmentShader:fragmentShaderForOptimizedGaussianBlurOfRadius(pixelRadius, sigma:Double(sigma), luminanceThreshold: self.luminanceThreshold))}
+                self.shader = crashOnShaderCompileFailure("GaussianBlur") { try sharedImageProcessingContext.programForVertexShader(vertexShaderForOptimizedGaussianBlurOfRadius(pixelRadius, sigma: Double(sigma), luminanceThreshold: self.luminanceThreshold), fragmentShader: fragmentShaderForOptimizedGaussianBlurOfRadius(pixelRadius, sigma: Double(sigma), luminanceThreshold: self.luminanceThreshold)) }
             }
         }
     }
@@ -33,10 +33,10 @@ public class GaussianBlur: TwoStageOperation {
     public init(blurRadiusInPixels: Float = 2.0, luminanceThreshold: Float? = nil) {
         self.blurRadiusInPixels = blurRadiusInPixels
         self.luminanceThreshold = luminanceThreshold
-        let (sigma, downsamplingFactor) = sigmaAndDownsamplingForBlurRadius(blurRadiusInPixels, limit:8.0, override:false)
+        let (sigma, downsamplingFactor) = sigmaAndDownsamplingForBlurRadius(blurRadiusInPixels, limit: 8.0, override: false)
         let pixelRadius = pixelRadiusForBlurSigma(Double(sigma))
-        let initialShader = crashOnShaderCompileFailure("GaussianBlur"){try sharedImageProcessingContext.programForVertexShader(vertexShaderForOptimizedGaussianBlurOfRadius(pixelRadius, sigma:Double(sigma), luminanceThreshold: luminanceThreshold), fragmentShader:fragmentShaderForOptimizedGaussianBlurOfRadius(pixelRadius, sigma:Double(sigma), luminanceThreshold: luminanceThreshold))}
-        super.init(shader:initialShader, numberOfInputs:1)
+        let initialShader = crashOnShaderCompileFailure("GaussianBlur") { try sharedImageProcessingContext.programForVertexShader(vertexShaderForOptimizedGaussianBlurOfRadius(pixelRadius, sigma: Double(sigma), luminanceThreshold: luminanceThreshold), fragmentShader: fragmentShaderForOptimizedGaussianBlurOfRadius(pixelRadius, sigma: Double(sigma), luminanceThreshold: luminanceThreshold)) }
+        super.init(shader: initialShader, numberOfInputs: 1)
         self.downsamplingFactor = downsamplingFactor
         if let luminanceThreshold = luminanceThreshold {
             self.uniformSettings["luminanceThreshold"] = luminanceThreshold
@@ -48,22 +48,21 @@ public class GaussianBlur: TwoStageOperation {
 // MARK: -
 // MARK: Blur sizing calculations
 
-func sigmaAndDownsamplingForBlurRadius(_ radius:Float, limit:Float, override:Bool = false) -> (sigma:Float, downsamplingFactor:Float?) {
+func sigmaAndDownsamplingForBlurRadius(_ radius: Float, limit: Float, override: Bool = false) -> (sigma: Float, downsamplingFactor: Float?) {
     // For now, only do integral sigmas
     let startingRadius = Float(round(Double(radius)))
-    guard ((startingRadius > limit) && (!override)) else { return (sigma:startingRadius, downsamplingFactor:nil) }
+    guard (startingRadius > limit) && (!override) else { return (sigma:startingRadius, downsamplingFactor:nil) }
     
     return (sigma:limit, downsamplingFactor:startingRadius / limit)
 }
 
-
 // inputRadius for Core Image's CIGaussianBlur is really sigma in the Gaussian equation, so I'm using that for my blur radius, to be consistent
-func pixelRadiusForBlurSigma(_ sigma:Double) -> UInt {
+func pixelRadiusForBlurSigma(_ sigma: Double) -> UInt {
     // 7.0 is the limit for blur size for hardcoded varying offsets
     let minimumWeightToFindEdgeOfSamplingArea = 1.0 / 256.0
     
-    var calculatedSampleRadius:UInt = 0
-    if (sigma >= 1.0) { // Avoid a divide-by-zero error here
+    var calculatedSampleRadius: UInt = 0
+    if sigma >= 1.0 { // Avoid a divide-by-zero error here
         // Calculate the number of pixels to sample from by setting a bottom limit for the contribution of the outermost pixel
         calculatedSampleRadius = UInt(floor(sqrt(-2.0 * pow(sigma, 2.0) * log(minimumWeightToFindEdgeOfSamplingArea * sqrt(2.0 * .pi * pow(sigma, 2.0))) )))
         calculatedSampleRadius += calculatedSampleRadius % 2 // There's nothing to gain from handling odd radius sizes, due to the optimizations I use
@@ -75,32 +74,32 @@ func pixelRadiusForBlurSigma(_ sigma:Double) -> UInt {
 // MARK: -
 // MARK: Standard Gaussian blur shaders
 
-func standardGaussianWeightsForRadius(_ blurRadius:UInt, sigma:Double) -> [Double] {
+func standardGaussianWeightsForRadius(_ blurRadius: UInt, sigma: Double) -> [Double] {
     var gaussianWeights = [Double]()
     var sumOfWeights = 0.0
     for gaussianWeightIndex in 0...blurRadius {
         let weight = (1.0 / sqrt(2.0 * .pi * pow(sigma, 2.0))) * exp(-pow(Double(gaussianWeightIndex), 2.0) / (2.0 * pow(sigma, 2.0)))
         gaussianWeights.append(weight)
-        if (gaussianWeightIndex == 0) {
+        if gaussianWeightIndex == 0 {
             sumOfWeights += weight
         } else {
             sumOfWeights += (weight * 2.0)
         }
     }
     
-    return gaussianWeights.map{$0 / sumOfWeights}
+    return gaussianWeights.map { $0 / sumOfWeights }
 }
 
-func vertexShaderForStandardGaussianBlurOfRadius(_ radius:UInt, sigma:Double) -> String {
-    guard (radius > 0) else { return OneInputVertexShader }
+func vertexShaderForStandardGaussianBlurOfRadius(_ radius: UInt, sigma: Double) -> String {
+    guard radius > 0 else { return OneInputVertexShader }
     
     let numberOfBlurCoordinates = radius * 2 + 1
     var shaderString = "varying vec2 textureCoordinate;\n attribute vec4 position;\n attribute vec4 inputTextureCoordinate;\n \n uniform float texelWidth;\n uniform float texelHeight;\n \n varying vec2 blurCoordinates[\(numberOfBlurCoordinates)];\n \n void main()\n {\n gl_Position = position;\n \n vec2 singleStepOffset = vec2(texelWidth, texelHeight);\n"
     for currentBlurCoordinateIndex in 0..<numberOfBlurCoordinates {
         let offsetFromCenter = Int(currentBlurCoordinateIndex) - Int(radius)
-        if (offsetFromCenter < 0) {
+        if offsetFromCenter < 0 {
             shaderString += "blurCoordinates[\(currentBlurCoordinateIndex)] = inputTextureCoordinate.xy - singleStepOffset * \(Float(-offsetFromCenter));\n"
-        } else if (offsetFromCenter > 0) {
+        } else if offsetFromCenter > 0 {
             shaderString += "blurCoordinates[\(currentBlurCoordinateIndex)] = inputTextureCoordinate.xy + singleStepOffset * \(Float(offsetFromCenter));\n"
         } else {
             shaderString += "blurCoordinates[\(currentBlurCoordinateIndex)] = inputTextureCoordinate.xy;\n"
@@ -111,10 +110,10 @@ func vertexShaderForStandardGaussianBlurOfRadius(_ radius:UInt, sigma:Double) ->
     return shaderString
 }
 
-func fragmentShaderForStandardGaussianBlurOfRadius(_ radius:UInt, sigma:Double) -> String {
-    guard (radius > 0) else { return PassthroughFragmentShader }
+func fragmentShaderForStandardGaussianBlurOfRadius(_ radius: UInt, sigma: Double) -> String {
+    guard radius > 0 else { return PassthroughFragmentShader }
 
-    let gaussianWeights = standardGaussianWeightsForRadius(radius, sigma:sigma)
+    let gaussianWeights = standardGaussianWeightsForRadius(radius, sigma: sigma)
     
     let numberOfBlurCoordinates = radius * 2 + 1
 #if GLES
@@ -125,7 +124,7 @@ func fragmentShaderForStandardGaussianBlurOfRadius(_ radius:UInt, sigma:Double) 
 
     for currentBlurCoordinateIndex in 0..<numberOfBlurCoordinates {
         let offsetFromCenter = Int(currentBlurCoordinateIndex) - Int(radius)
-        if (offsetFromCenter < 0) {
+        if offsetFromCenter < 0 {
             shaderString += "sum += texture2D(inputImageTexture, blurCoordinates[\(currentBlurCoordinateIndex)]) * \(gaussianWeights[-offsetFromCenter]);\n"
         } else {
             shaderString += "sum += texture2D(inputImageTexture, blurCoordinates[\(currentBlurCoordinateIndex)]) * \(gaussianWeights[offsetFromCenter]);\n"
@@ -138,8 +137,8 @@ func fragmentShaderForStandardGaussianBlurOfRadius(_ radius:UInt, sigma:Double) 
 // MARK: -
 // MARK: Optimized Gaussian blur shaders
 
-func optimizedGaussianOffsetsForRadius(_ blurRadius:UInt, sigma:Double) -> [Double] {
-    let standardWeights = standardGaussianWeightsForRadius(blurRadius, sigma:sigma)
+func optimizedGaussianOffsetsForRadius(_ blurRadius: UInt, sigma: Double) -> [Double] {
+    let standardWeights = standardGaussianWeightsForRadius(blurRadius, sigma: sigma)
     let numberOfOptimizedOffsets = min(blurRadius / 2 + (blurRadius % 2), 7)
     
     var optimizedOffsets = [Double]()
@@ -154,10 +153,10 @@ func optimizedGaussianOffsetsForRadius(_ blurRadius:UInt, sigma:Double) -> [Doub
     return optimizedOffsets
 }
 
-func vertexShaderForOptimizedGaussianBlurOfRadius(_ radius:UInt, sigma:Double, luminanceThreshold: Float? = nil) -> String {
-    guard (radius > 0) else { return OneInputVertexShader }
+func vertexShaderForOptimizedGaussianBlurOfRadius(_ radius: UInt, sigma: Double, luminanceThreshold: Float? = nil) -> String {
+    guard radius > 0 else { return OneInputVertexShader }
 
-    let optimizedOffsets = optimizedGaussianOffsetsForRadius(radius, sigma:sigma)
+    let optimizedOffsets = optimizedGaussianOffsetsForRadius(radius, sigma: sigma)
     let numberOfOptimizedOffsets = optimizedOffsets.count
     
     // Header
@@ -180,10 +179,10 @@ func vertexShaderForOptimizedGaussianBlurOfRadius(_ radius:UInt, sigma:Double, l
     return shaderString
 }
 
-func fragmentShaderForOptimizedGaussianBlurOfRadius(_ radius:UInt, sigma:Double, luminanceThreshold: Float? = nil) -> String {
-    guard (radius > 0) else { return PassthroughFragmentShader }
+func fragmentShaderForOptimizedGaussianBlurOfRadius(_ radius: UInt, sigma: Double, luminanceThreshold: Float? = nil) -> String {
+    guard radius > 0 else { return PassthroughFragmentShader }
     
-    let standardWeights = standardGaussianWeightsForRadius(radius, sigma:sigma)
+    let standardWeights = standardGaussianWeightsForRadius(radius, sigma: sigma)
     let numberOfOptimizedOffsets = min(radius / 2 + (radius % 2), 7)
     let trueNumberOfOptimizedOffsets = radius / 2 + (radius % 2)
 
@@ -211,7 +210,7 @@ func fragmentShaderForOptimizedGaussianBlurOfRadius(_ radius:UInt, sigma:Double,
     }
     
     // If the number of required samples exceeds the amount we can pass in via varyings, we have to do dependent texture reads in the fragment shader
-    if (trueNumberOfOptimizedOffsets > numberOfOptimizedOffsets) {
+    if trueNumberOfOptimizedOffsets > numberOfOptimizedOffsets {
 #if GLES
             shaderString += "highp vec2 singleStepOffset = vec2(texelWidth, texelHeight);\n"
 #else
@@ -220,8 +219,8 @@ func fragmentShaderForOptimizedGaussianBlurOfRadius(_ radius:UInt, sigma:Double,
     }
 
     for currentOverlowTextureRead in numberOfOptimizedOffsets..<trueNumberOfOptimizedOffsets {
-        let firstWeight = standardWeights[Int(currentOverlowTextureRead * 2 + 1)];
-        let secondWeight = standardWeights[Int(currentOverlowTextureRead * 2 + 2)];
+        let firstWeight = standardWeights[Int(currentOverlowTextureRead * 2 + 1)]
+        let secondWeight = standardWeights[Int(currentOverlowTextureRead * 2 + 2)]
         
         let optimizedWeight = firstWeight + secondWeight
         let optimizedOffset = (firstWeight * (Double(currentOverlowTextureRead) * 2.0 + 1.0) + secondWeight * (Double(currentOverlowTextureRead) * 2.0 + 2.0)) / optimizedWeight

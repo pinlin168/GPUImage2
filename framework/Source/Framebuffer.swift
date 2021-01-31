@@ -18,13 +18,13 @@ import Foundation
 import AVFoundation
 
 // TODO: Add a good lookup table to this to allow for detailed error messages
-struct FramebufferCreationError:Error {
-    let errorCode:GLenum
+struct FramebufferCreationError: Error {
+    let errorCode: GLenum
 }
 
 public enum FramebufferTimingStyle {
     case stillImage
-    case videoFrame(timestamp:Timestamp)
+    case videoFrame(timestamp: Timestamp)
     
     func isTransient() -> Bool {
         switch self {
@@ -33,7 +33,7 @@ public enum FramebufferTimingStyle {
         }
     }
     
-    public var timestamp:Timestamp? {
+    public var timestamp: Timestamp? {
         get {
             switch self {
                 case .stillImage: return nil
@@ -44,25 +44,25 @@ public enum FramebufferTimingStyle {
 }
 
 public class Framebuffer: Hashable {
-    public var timingStyle:FramebufferTimingStyle = .stillImage
-    public var orientation:ImageOrientation
-    public var userInfo:[AnyHashable:Any]?
+    public var timingStyle: FramebufferTimingStyle = .stillImage
+    public var orientation: ImageOrientation
+    public var userInfo: [AnyHashable: Any]?
     
-    public let texture:GLuint
-    let framebuffer:GLuint?
-    let stencilBuffer:GLuint?
-    public let size:GLSize
-    let internalFormat:Int32
-    let format:Int32
-    let type:Int32
+    public let texture: GLuint
+    let framebuffer: GLuint?
+    let stencilBuffer: GLuint?
+    public let size: GLSize
+    let internalFormat: Int32
+    let format: Int32
+    let type: Int32
 
-    let hash:Int64
-    let textureOverride:Bool
+    let hash: Int64
+    let textureOverride: Bool
     let id = UUID().uuidString
     
-    unowned var context:OpenGLContext
+    unowned var context: OpenGLContext
     
-    public init(context:OpenGLContext, orientation:ImageOrientation, size:GLSize, textureOnly:Bool = false, minFilter:Int32 = GL_LINEAR, magFilter:Int32 = GL_LINEAR, wrapS:Int32 = GL_CLAMP_TO_EDGE, wrapT:Int32 = GL_CLAMP_TO_EDGE, internalFormat:Int32 = GL_RGBA, format:Int32 = GL_BGRA, type:Int32 = GL_UNSIGNED_BYTE, stencil:Bool = false, overriddenTexture:GLuint? = nil) throws {
+    public init(context: OpenGLContext, orientation: ImageOrientation, size: GLSize, textureOnly: Bool = false, minFilter: Int32 = GL_LINEAR, magFilter: Int32 = GL_LINEAR, wrapS: Int32 = GL_CLAMP_TO_EDGE, wrapT: Int32 = GL_CLAMP_TO_EDGE, internalFormat: Int32 = GL_RGBA, format: Int32 = GL_BGRA, type: Int32 = GL_UNSIGNED_BYTE, stencil: Bool = false, overriddenTexture: GLuint? = nil) throws {
         self.context = context
         self.size = size
         self.orientation = orientation
@@ -70,19 +70,19 @@ public class Framebuffer: Hashable {
         self.format = format
         self.type = type
         
-        self.hash = hashForFramebufferWithProperties(orientation:orientation, size:size, textureOnly:textureOnly, minFilter:minFilter, magFilter:magFilter, wrapS:wrapS, wrapT:wrapT, internalFormat:internalFormat, format:format, type:type, stencil:stencil)
+        self.hash = hashForFramebufferWithProperties(orientation: orientation, size: size, textureOnly: textureOnly, minFilter: minFilter, magFilter: magFilter, wrapS: wrapS, wrapT: wrapT, internalFormat: internalFormat, format: format, type: type, stencil: stencil)
 
         if let newTexture = overriddenTexture {
             textureOverride = true
             texture = newTexture
         } else {
             textureOverride = false
-            texture = generateTexture(minFilter:minFilter, magFilter:magFilter, wrapS:wrapS, wrapT:wrapT)
+            texture = generateTexture(minFilter: minFilter, magFilter: magFilter, wrapS: wrapS, wrapT: wrapT)
         }
         
-        if (!textureOnly) {
+        if !textureOnly {
             do {
-                let (createdFrameBuffer, createdStencil) = try generateFramebufferForTexture(texture, width:size.width, height:size.height, internalFormat:internalFormat, format:format, type:type, stencil:stencil)
+                let (createdFrameBuffer, createdStencil) = try generateFramebufferForTexture(texture, width: size.width, height: size.height, internalFormat: internalFormat, format: format, type: type, stencil: stencil)
                 framebuffer = createdFrameBuffer
                 stencilBuffer = createdStencil
             } catch {
@@ -97,12 +97,12 @@ public class Framebuffer: Hashable {
     }
     
     deinit {
-        if (!textureOverride) {
+        if !textureOverride {
             var mutableTexture = texture
             context.runOperationAsynchronously {
                 glDeleteTextures(1, &mutableTexture)
             }
-            //debugPrint("Delete texture at size: \(size)")
+            // debugPrint("Delete texture at size: \(size)")
         }
         
         if let framebuffer = framebuffer {
@@ -120,15 +120,15 @@ public class Framebuffer: Hashable {
         }
     }
     
-    public func sizeForTargetOrientation(_ targetOrientation:ImageOrientation) -> GLSize {
+    public func sizeForTargetOrientation(_ targetOrientation: ImageOrientation) -> GLSize {
         if self.orientation.rotationNeededForOrientation(targetOrientation).flipsDimensions() {
-            return GLSize(width:size.height, height:size.width)
+            return GLSize(width: size.height, height: size.width)
         } else {
             return size
         }
     }
     
-    public func aspectRatioForRotation(_ rotation:Rotation) -> Float {
+    public func aspectRatioForRotation(_ rotation: Rotation) -> Float {
         if rotation.flipsDimensions() {
             return Float(size.width) / Float(size.height)
         } else {
@@ -136,27 +136,27 @@ public class Framebuffer: Hashable {
         }
     }
 
-    public func texelSize(for rotation:Rotation) -> Size {
+    public func texelSize(for rotation: Rotation) -> Size {
         if rotation.flipsDimensions() {
-            return Size(width:1.0 / Float(size.height), height:1.0 / Float(size.width))
+            return Size(width: 1.0 / Float(size.height), height: 1.0 / Float(size.width))
         } else {
-            return Size(width:1.0 / Float(size.width), height:1.0 / Float(size.height))
+            return Size(width: 1.0 / Float(size.width), height: 1.0 / Float(size.height))
         }
     }
 
-    func initialStageTexelSize(for rotation:Rotation) -> Size {
+    func initialStageTexelSize(for rotation: Rotation) -> Size {
         if rotation.flipsDimensions() {
-            return Size(width:1.0 / Float(size.height), height:0.0)
+            return Size(width: 1.0 / Float(size.height), height: 0.0)
         } else {
-            return Size(width:0.0, height:1.0 / Float(size.height))
+            return Size(width: 0.0, height: 1.0 / Float(size.height))
         }
     }
 
-    public func texturePropertiesForOutputRotation(_ rotation:Rotation) -> InputTextureProperties {
-        return InputTextureProperties(textureVBO:context.textureVBO(for:rotation), texture:texture)
+    public func texturePropertiesForOutputRotation(_ rotation: Rotation) -> InputTextureProperties {
+        return InputTextureProperties(textureVBO: context.textureVBO(for: rotation), texture: texture)
     }
 
-    public func texturePropertiesForTargetOrientation(_ targetOrientation:ImageOrientation) -> InputTextureProperties {
+    public func texturePropertiesForTargetOrientation(_ targetOrientation: ImageOrientation) -> InputTextureProperties {
         return texturePropertiesForOutputRotation(self.orientation.rotationNeededForOrientation(targetOrientation))
     }
     
@@ -169,7 +169,7 @@ public class Framebuffer: Hashable {
     // MARK: -
     // MARK: Framebuffer cache
 
-    public weak var cache:FramebufferCache?
+    public weak var cache: FramebufferCache?
     public var shouldReturnToCache = true
     var framebufferRetainCount = 0
     public func lock() {
@@ -182,8 +182,8 @@ public class Framebuffer: Hashable {
     
     public func unlock() {
         framebufferRetainCount -= 1
-        if (framebufferRetainCount < 1) {
-            if ((framebufferRetainCount < 0) && (cache != nil)) {
+        if framebufferRetainCount < 1 {
+            if (framebufferRetainCount < 0) && (cache != nil) {
                 print("WARNING: Tried to overrelease a framebuffer")
             }
             framebufferRetainCount = 0
@@ -200,11 +200,11 @@ public class Framebuffer: Hashable {
     }
 }
 
-func hashForFramebufferWithProperties(orientation:ImageOrientation, size:GLSize, textureOnly:Bool = false, minFilter:Int32 = GL_LINEAR, magFilter:Int32 = GL_LINEAR, wrapS:Int32 = GL_CLAMP_TO_EDGE, wrapT:Int32 = GL_CLAMP_TO_EDGE, internalFormat:Int32 = GL_RGBA, format:Int32 = GL_BGRA, type:Int32 = GL_UNSIGNED_BYTE, stencil:Bool = false) -> Int64 {
-    var result:Int64 = 1
-    let prime:Int64 = 31
-    let yesPrime:Int64 = 1231
-    let noPrime:Int64 = 1237
+func hashForFramebufferWithProperties(orientation: ImageOrientation, size: GLSize, textureOnly: Bool = false, minFilter: Int32 = GL_LINEAR, magFilter: Int32 = GL_LINEAR, wrapS: Int32 = GL_CLAMP_TO_EDGE, wrapT: Int32 = GL_CLAMP_TO_EDGE, internalFormat: Int32 = GL_RGBA, format: Int32 = GL_BGRA, type: Int32 = GL_UNSIGNED_BYTE, stencil: Bool = false) -> Int64 {
+    var result: Int64 = 1
+    let prime: Int64 = 31
+    let yesPrime: Int64 = 1231
+    let noPrime: Int64 = 1237
     
     // TODO: Complete the rest of this
     result = prime * result + Int64(size.width)
@@ -234,7 +234,7 @@ extension Rotation {
         }
     }
     
-    func croppedTextureCoordinates(offsetFromOrigin:Position, cropSize:Size) -> [GLfloat] {
+    func croppedTextureCoordinates(offsetFromOrigin: Position, cropSize: Size) -> [GLfloat] {
         let minX = GLfloat(offsetFromOrigin.x)
         let minY = GLfloat(offsetFromOrigin.y)
         let maxX = GLfloat(offsetFromOrigin.x) + GLfloat(cropSize.width)
@@ -270,7 +270,7 @@ public extension Framebuffer {
         let bufferSize = Int(size.width * size.height * 4)
         guard let buffer = NSMutableData(capacity: bufferSize) else { return nil }
         glReadPixels(0, 0, size.width, size.height, GLenum(GL_RGBA), GLenum(GL_UNSIGNED_BYTE), buffer.mutableBytes)
-        let dataProvider = CGDataProvider(dataInfo: nil, data: buffer.mutableBytes, size: bufferSize) {_,_,_ in }
+        let dataProvider = CGDataProvider(dataInfo: nil, data: buffer.mutableBytes, size: bufferSize) { _, _, _ in }
         guard let provider = dataProvider else { return nil }
         let cgImage = CGImage(width: Int(size.width),
                             height: Int(size.height),

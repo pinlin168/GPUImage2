@@ -14,7 +14,6 @@ public class FramebufferGenerator {
     private var renderFramebuffer: Framebuffer?
     
     public init() {
-        
     }
     
     public func generateFromYUVBuffer(_ yuvPixelBuffer: CVPixelBuffer, frameTime: CMTime, videoOrientation: ImageOrientation) -> Framebuffer? {
@@ -72,8 +71,8 @@ private extension FramebufferGenerator {
         let luminanceTexture = CVOpenGLESTextureGetName(luminanceGLTexture!)
         
         glBindTexture(GLenum(GL_TEXTURE_2D), luminanceTexture)
-        glTexParameterf(GLenum(GL_TEXTURE_2D), GLenum(GL_TEXTURE_WRAP_S), GLfloat(GL_CLAMP_TO_EDGE));
-        glTexParameterf(GLenum(GL_TEXTURE_2D), GLenum(GL_TEXTURE_WRAP_T), GLfloat(GL_CLAMP_TO_EDGE));
+        glTexParameterf(GLenum(GL_TEXTURE_2D), GLenum(GL_TEXTURE_WRAP_S), GLfloat(GL_CLAMP_TO_EDGE))
+        glTexParameterf(GLenum(GL_TEXTURE_2D), GLenum(GL_TEXTURE_WRAP_T), GLfloat(GL_CLAMP_TO_EDGE))
         
         let luminanceFramebuffer: Framebuffer
         do {
@@ -99,14 +98,14 @@ private extension FramebufferGenerator {
         let chrominanceTexture = CVOpenGLESTextureGetName(chrominanceGLTexture!)
         
         glBindTexture(GLenum(GL_TEXTURE_2D), chrominanceTexture)
-        glTexParameterf(GLenum(GL_TEXTURE_2D), GLenum(GL_TEXTURE_WRAP_S), GLfloat(GL_CLAMP_TO_EDGE));
-        glTexParameterf(GLenum(GL_TEXTURE_2D), GLenum(GL_TEXTURE_WRAP_T), GLfloat(GL_CLAMP_TO_EDGE));
+        glTexParameterf(GLenum(GL_TEXTURE_2D), GLenum(GL_TEXTURE_WRAP_S), GLfloat(GL_CLAMP_TO_EDGE))
+        glTexParameterf(GLenum(GL_TEXTURE_2D), GLenum(GL_TEXTURE_WRAP_T), GLfloat(GL_CLAMP_TO_EDGE))
         
         let chrominanceFramebuffer: Framebuffer
         do {
             chrominanceFramebuffer = try Framebuffer(context: sharedImageProcessingContext,
                                                      orientation: originalOrientation,
-                                                     size: GLSize(width:GLint(bufferWidth), height:GLint(bufferHeight)),
+                                                     size: GLSize(width: GLint(bufferWidth), height: GLint(bufferHeight)),
                                                      textureOnly: true,
                                                      overriddenTexture: chrominanceTexture)
         } catch {
@@ -155,19 +154,18 @@ private extension FramebufferGenerator {
             
             let bufferSize = framebuffer.size
             var cachedTextureRef: CVOpenGLESTexture?
-            let _ = CVOpenGLESTextureCacheCreateTextureFromImage(kCFAllocatorDefault, sharedImageProcessingContext.coreVideoTextureCache, pixelBuffer, nil, GLenum(GL_TEXTURE_2D), GL_RGBA, bufferSize.width, bufferSize.height, GLenum(GL_BGRA), GLenum(GL_UNSIGNED_BYTE), 0, &cachedTextureRef)
+            _ = CVOpenGLESTextureCacheCreateTextureFromImage(kCFAllocatorDefault, sharedImageProcessingContext.coreVideoTextureCache, pixelBuffer, nil, GLenum(GL_TEXTURE_2D), GL_RGBA, bufferSize.width, bufferSize.height, GLenum(GL_BGRA), GLenum(GL_UNSIGNED_BYTE), 0, &cachedTextureRef)
             let cachedTexture = CVOpenGLESTextureGetName(cachedTextureRef!)
             
-            renderFramebuffer = try Framebuffer(context: sharedImageProcessingContext, orientation:.portrait, size:bufferSize, textureOnly:false, overriddenTexture:cachedTexture)
+            renderFramebuffer = try Framebuffer(context: sharedImageProcessingContext, orientation: .portrait, size: bufferSize, textureOnly: false, overriddenTexture: cachedTexture)
             
             renderFramebuffer?.activateFramebufferForRendering()
             clearFramebufferWithColor(Color.black)
-            CVPixelBufferLockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue:CVOptionFlags(0)))
+            CVPixelBufferLockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue: CVOptionFlags(0)))
             renderQuadWithShader(sharedImageProcessingContext.passthroughShader, uniformSettings: ShaderUniformSettings(), vertexBufferObject: sharedImageProcessingContext.standardImageVBO, inputTextures: [framebuffer.texturePropertiesForOutputRotation(.noRotation)], context: sharedImageProcessingContext)
             
             glFinish()
-        }
-        catch {
+        } catch {
             print("WARNING: Trouble appending pixel buffer at time: \(framebuffer.timingStyle.timestamp?.seconds() ?? 0) \(error)")
         }
         
@@ -176,7 +174,7 @@ private extension FramebufferGenerator {
     }
     
     func _createPixelBufferPool(_ width: Int32, _ height: Int32, _ pixelFormat: FourCharCode, _ maxBufferCount: Int32) -> CVPixelBufferPool? {
-        var outputPool: CVPixelBufferPool? = nil
+        var outputPool: CVPixelBufferPool?
         
         let sourcePixelBufferOptions: NSDictionary = [kCVPixelBufferPixelFormatTypeKey: pixelFormat,
                                                       kCVPixelBufferWidthKey: width,

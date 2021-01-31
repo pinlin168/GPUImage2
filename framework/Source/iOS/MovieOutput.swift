@@ -4,7 +4,7 @@ import UIKit
 
 public protocol AudioEncodingTarget {
     func activateAudioTrack() throws
-    func processAudioBuffer(_ sampleBuffer:CMSampleBuffer, shouldInvalidateSampleWhenDone:Bool)
+    func processAudioBuffer(_ sampleBuffer: CMSampleBuffer, shouldInvalidateSampleWhenDone: Bool)
     // Note: This is not used for synchronized encoding.
     func readyForNextAudioBuffer() -> Bool
 }
@@ -51,7 +51,7 @@ public enum MovieOutputState: String {
 public class MovieOutput: ImageConsumer, AudioEncodingTarget {
     private static let assetWriterQueue = DispatchQueue(label: "com.GPUImage2.MovieOutput.assetWriterQueue", qos: .userInitiated)
     public let sources = SourceContainer()
-    public let maximumInputs:UInt = 1
+    public let maximumInputs: UInt = 1
     
     public weak var delegate: MovieOutputDelegate?
     
@@ -60,12 +60,12 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
     public var videoID: String?
     public var writerStatus: AVAssetWriter.Status { assetWriter.status }
     public var writerError: Error? { assetWriter.error }
-    private let assetWriter:AVAssetWriter
-    let assetWriterVideoInput:AVAssetWriterInput
-    var assetWriterAudioInput:AVAssetWriterInput?
-    private let assetWriterPixelBufferInput:AVAssetWriterInputPixelBufferAdaptor
+    private let assetWriter: AVAssetWriter
+    let assetWriterVideoInput: AVAssetWriterInput
+    var assetWriterAudioInput: AVAssetWriterInput?
+    private let assetWriterPixelBufferInput: AVAssetWriterInputPixelBufferAdaptor
     public let size: Size
-    private let colorSwizzlingShader:ShaderProgram
+    private let colorSwizzlingShader: ShaderProgram
     public let needAlignAV: Bool
     var videoEncodingIsFinished = false
     var audioEncodingIsFinished = false
@@ -79,7 +79,7 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
     private var previousVideoEndTime: CMTime?
     private var previousAudioEndTime: CMTime?
     
-    var encodingLiveVideo:Bool {
+    var encodingLiveVideo: Bool {
         didSet {
             assetWriterVideoInput.expectsMediaDataInRealTime = encodingLiveVideo
             assetWriterAudioInput?.expectsMediaDataInRealTime = encodingLiveVideo
@@ -87,12 +87,12 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
     }
     private var ciFilter: CILookupFilter?
     private var cpuCIContext: CIContext?
-    public private(set) var pixelBuffer:CVPixelBuffer? = nil
+    public private(set) var pixelBuffer: CVPixelBuffer?
     public var waitUtilDataIsReadyForLiveVideo = false
-    public private(set) var renderFramebuffer:Framebuffer!
+    public private(set) var renderFramebuffer: Framebuffer!
     
-    public private(set) var audioSettings:[String:Any]? = nil
-    public private(set) var audioSourceFormatHint:CMFormatDescription?
+    public private(set) var audioSettings: [String: Any]?
+    public private(set) var audioSourceFormatHint: CMFormatDescription?
     
     public static let movieProcessingContext: OpenGLContext = {
         var context: OpenGLContext?
@@ -126,8 +126,7 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
     var preferredTransform: CGAffineTransform?
     private var isProcessing = false
     
-    public init(URL:Foundation.URL, fps: Double, size:Size, needAlignAV: Bool = true, fileType:AVFileType = .mov, liveVideo:Bool = false, videoSettings:[String:Any]? = nil, videoNaturalTimeScale:CMTimeScale? = nil, optimizeForNetworkUse: Bool = false, disablePixelBufferAttachments: Bool = true, audioSettings:[String:Any]? = nil, audioSourceFormatHint:CMFormatDescription? = nil) throws {
-
+    public init(URL: Foundation.URL, fps: Double, size: Size, needAlignAV: Bool = true, fileType: AVFileType = .mov, liveVideo: Bool = false, videoSettings: [String: Any]? = nil, videoNaturalTimeScale: CMTimeScale? = nil, optimizeForNetworkUse: Bool = false, disablePixelBufferAttachments: Bool = true, audioSettings: [String: Any]? = nil, audioSourceFormatHint: CMFormatDescription? = nil) throws {
         print("movie output init \(URL)")
         self.url = URL
         self.fps = fps
@@ -136,29 +135,29 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
         if sharedImageProcessingContext.supportsTextureCaches() {
             self.colorSwizzlingShader = sharedImageProcessingContext.passthroughShader
         } else {
-            self.colorSwizzlingShader = crashOnShaderCompileFailure("MovieOutput"){try sharedImageProcessingContext.programForVertexShader(defaultVertexShaderForInputs(1), fragmentShader:ColorSwizzlingFragmentShader)}
+            self.colorSwizzlingShader = crashOnShaderCompileFailure("MovieOutput") { try sharedImageProcessingContext.programForVertexShader(defaultVertexShaderForInputs(1), fragmentShader: ColorSwizzlingFragmentShader) }
         }
         
         self.size = size
         
-        assetWriter = try AVAssetWriter(url:URL, fileType:fileType)
+        assetWriter = try AVAssetWriter(url: URL, fileType: fileType)
         if optimizeForNetworkUse {
             // NOTE: this is neccessary for streaming play support, but it will slow down finish writing speed
             assetWriter.shouldOptimizeForNetworkUse = true
         }
         
-        var localSettings:[String:Any]
+        var localSettings: [String: Any]
         if let videoSettings = videoSettings {
             localSettings = videoSettings
         } else {
-            localSettings = [String:Any]()
+            localSettings = [String: Any]()
         }
         
         localSettings[AVVideoWidthKey] = localSettings[AVVideoWidthKey] ?? size.width
         localSettings[AVVideoHeightKey] = localSettings[AVVideoHeightKey] ?? size.height
-        localSettings[AVVideoCodecKey] =  localSettings[AVVideoCodecKey] ?? AVVideoCodecType.h264.rawValue
+        localSettings[AVVideoCodecKey] = localSettings[AVVideoCodecKey] ?? AVVideoCodecType.h264.rawValue
         
-        assetWriterVideoInput = AVAssetWriterInput(mediaType:.video, outputSettings:localSettings)
+        assetWriterVideoInput = AVAssetWriterInput(mediaType: .video, outputSettings: localSettings)
         assetWriterVideoInput.expectsMediaDataInRealTime = liveVideo
         
         // You should provide a naturalTimeScale if you have one for the current media.
@@ -168,19 +167,18 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
             assetWriterVideoInput.mediaTimeScale = naturalTimeScale
             // This is set to make sure that a functional movie is produced, even if the recording is cut off mid-stream. Only the last second should be lost in that case.
             assetWriter.movieFragmentInterval = CMTime(seconds: 1, preferredTimescale: naturalTimeScale)
-        }
-        else {
+        } else {
             assetWriter.movieFragmentInterval = CMTime(seconds: 1, preferredTimescale: 1000)
         }
         
         encodingLiveVideo = liveVideo
         
         // You need to use BGRA for the video in order to get realtime encoding. I use a color-swizzling shader to line up glReadPixels' normal RGBA output with the movie input's BGRA.
-        let sourcePixelBufferAttributesDictionary:[String:Any] = [kCVPixelBufferPixelFormatTypeKey as String:Int32(kCVPixelFormatType_32BGRA),
-                                                                  kCVPixelBufferWidthKey as String:self.size.width,
-                                                                  kCVPixelBufferHeightKey as String:self.size.height]
+        let sourcePixelBufferAttributesDictionary: [String: Any] = [kCVPixelBufferPixelFormatTypeKey as String: Int32(kCVPixelFormatType_32BGRA),
+                                                                  kCVPixelBufferWidthKey as String: self.size.width,
+                                                                  kCVPixelBufferHeightKey as String: self.size.height]
         
-        assetWriterPixelBufferInput = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput:assetWriterVideoInput, sourcePixelBufferAttributes:sourcePixelBufferAttributesDictionary)
+        assetWriterPixelBufferInput = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: assetWriterVideoInput, sourcePixelBufferAttributes: sourcePixelBufferAttributesDictionary)
         assetWriter.add(assetWriterVideoInput)
         
         self.disablePixelBufferAttachments = disablePixelBufferAttachments
@@ -190,13 +188,13 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
     }
     
     public func setupSoftwareLUTFilter(lutImage: UIImage, intensity: Double? = nil, brightnessFactor: Double? = nil, sync: Bool = true) {
-        let block: () -> () = { [weak self] in
+        let block: () -> Void = { [weak self] in
             if self?.cpuCIContext == nil {
                 let colorSpace = CGColorSpaceCreateDeviceRGB()
                 let options: [CIContextOption: AnyObject] = [
                     .workingColorSpace: colorSpace,
-                    .outputColorSpace : colorSpace,
-                    .useSoftwareRenderer : NSNumber(value: true)
+                    .outputColorSpace: colorSpace,
+                    .useSoftwareRenderer: NSNumber(value: true)
                 ]
                 self?.cpuCIContext = CIContext(options: options)
             }
@@ -210,7 +208,7 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
     }
     
     public func cleanSoftwareFilter(sync: Bool = true) {
-        let block: () -> () = { [weak self] in
+        let block: () -> Void = { [weak self] in
             self?.ciFilter = nil
         }
         if sync {
@@ -250,7 +248,7 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
                     success = assetWriter.startWriting()
                 }
                 
-                if(!success) {
+                if !success {
                     throw MovieOutputError.startWritingError(assetWriterError: self.assetWriter.error)
                 }
                 
@@ -304,14 +302,13 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
             self.assetWriterAudioInput?.markAsFinished()
             self.assetWriterVideoInput.markAsFinished()
             
-            
             var lastFrameTime: CMTime?
             if let lastVideoFrame = self.previousVideoStartTime {
                 if !self.needAlignAV {
                     print("MovieOutput start endSession")
                     lastFrameTime = lastVideoFrame
                     self.assetWriter.endSession(atSourceTime: lastVideoFrame)
-                } else if let lastAudioTime = self.previousAudioEndTime, let lastVideoTime = self.previousVideoEndTime  {
+                } else if let lastAudioTime = self.previousAudioEndTime, let lastVideoTime = self.previousVideoEndTime {
                     let endTime = min(lastAudioTime, lastVideoTime)
                     lastFrameTime = endTime
                     print("MovieOutput start endSession, last audio end time is:\(lastAudioTime.seconds), last video end time is:\(lastVideoTime.seconds), end time is:\(endTime.seconds)")
@@ -366,7 +363,7 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
         self.videoEncodingIsFinished = true
     }
     
-    public func newFramebufferAvailable(_ framebuffer:Framebuffer, fromSourceIndex:UInt) {
+    public func newFramebufferAvailable(_ framebuffer: Framebuffer, fromSourceIndex: UInt) {
         glFinish()
         
         if previousVideoStartTime == nil {
@@ -384,8 +381,7 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
             // so we can decrease the risk of frames being dropped by the camera. I believe it is unlikely a backlog of framebuffers will occur
             // since the framebuffers come in much slower than during synchronized encoding.
             sharedImageProcessingContext.runOperationAsynchronously(work)
-        }
-        else {
+        } else {
             // This is done synchronously to prevent framebuffers from piling up during synchronized encoding.
             // If we don't force the sharedImageProcessingContext queue to wait for this frame to finish processing it will
             // keep sending frames whenever isReadyForMoreMediaData = true but the movieProcessingContext queue would run when the system wants it to.
@@ -444,7 +440,7 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
                     print("MovieOutput WARNING: Unable to create pixel buffer, dropping frame")
                     continue
                 }
-                try renderIntoPixelBuffer(pixelBuffer!, framebuffer:framebuffer)
+                try renderIntoPixelBuffer(pixelBuffer!, framebuffer: framebuffer)
                 guard assetWriterVideoInput.isReadyForMoreMediaData || shouldWaitForEncoding else {
                     print("MovieOutput WARNING: Had to drop a frame at time \(frameTime)")
                     continue
@@ -506,7 +502,7 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
         return false
     }
     
-    func renderIntoPixelBuffer(_ pixelBuffer:CVPixelBuffer, framebuffer:Framebuffer) throws {
+    func renderIntoPixelBuffer(_ pixelBuffer: CVPixelBuffer, framebuffer: Framebuffer) throws {
         // Is this the first pixel buffer we have recieved?
         // NOTE: this will cause strange frame brightness blinking for the first few seconds, be careful about using this.
         if renderFramebuffer == nil && !disablePixelBufferAttachments {
@@ -516,7 +512,7 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
         }
         
         let bufferSize = GLSize(self.size)
-        var cachedTextureRef:CVOpenGLESTexture? = nil
+        var cachedTextureRef: CVOpenGLESTexture?
         let ret = CVOpenGLESTextureCacheCreateTextureFromImage(kCFAllocatorDefault, sharedImageProcessingContext.coreVideoTextureCache, pixelBuffer, nil, GLenum(GL_TEXTURE_2D), GL_RGBA, bufferSize.width, bufferSize.height, GLenum(GL_BGRA), GLenum(GL_UNSIGNED_BYTE), 0, &cachedTextureRef)
         if ret != kCVReturnSuccess {
             print("MovieOutput ret error: \(ret), pixelBuffer: \(pixelBuffer)")
@@ -524,23 +520,23 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
         }
         let cachedTexture = CVOpenGLESTextureGetName(cachedTextureRef!)
         
-        renderFramebuffer = try Framebuffer(context:sharedImageProcessingContext, orientation:.portrait, size:bufferSize, textureOnly:false, overriddenTexture:cachedTexture)
+        renderFramebuffer = try Framebuffer(context: sharedImageProcessingContext, orientation: .portrait, size: bufferSize, textureOnly: false, overriddenTexture: cachedTexture)
         
         renderFramebuffer.activateFramebufferForRendering()
         clearFramebufferWithColor(Color.black)
-        CVPixelBufferLockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue:CVOptionFlags(0)))
-        renderQuadWithShader(colorSwizzlingShader, uniformSettings:ShaderUniformSettings(), vertexBufferObject:sharedImageProcessingContext.standardImageVBO, inputTextures:[framebuffer.texturePropertiesForOutputRotation(.noRotation)], context: sharedImageProcessingContext)
+        CVPixelBufferLockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue: CVOptionFlags(0)))
+        renderQuadWithShader(colorSwizzlingShader, uniformSettings: ShaderUniformSettings(), vertexBufferObject: sharedImageProcessingContext.standardImageVBO, inputTextures: [framebuffer.texturePropertiesForOutputRotation(.noRotation)], context: sharedImageProcessingContext)
         
         if sharedImageProcessingContext.supportsTextureCaches() {
             glFinish()
         } else {
             glReadPixels(0, 0, renderFramebuffer.size.width, renderFramebuffer.size.height, GLenum(GL_RGBA), GLenum(GL_UNSIGNED_BYTE), CVPixelBufferGetBaseAddress(pixelBuffer))
         }
-        CVPixelBufferUnlockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue:CVOptionFlags(0)))
+        CVPixelBufferUnlockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue: CVOptionFlags(0)))
     }
     
     // MARK: Append buffer directly from CMSampleBuffer
-    public func processVideoBuffer(_ sampleBuffer: CMSampleBuffer, shouldInvalidateSampleWhenDone:Bool) {
+    public func processVideoBuffer(_ sampleBuffer: CMSampleBuffer, shouldInvalidateSampleWhenDone: Bool) {
         let work = { [weak self] in
             _ = self?._processVideoSampleBuffer(sampleBuffer, shouldInvalidateSampleWhenDone: shouldInvalidateSampleWhenDone)
         }
@@ -590,7 +586,7 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
             
             previousVideoStartTime = frameTime
             
-            guard (assetWriterVideoInput.isReadyForMoreMediaData || self.shouldWaitForEncoding) else {
+            guard assetWriterVideoInput.isReadyForMoreMediaData || self.shouldWaitForEncoding else {
                 print("MovieOutput Had to drop a frame at time \(frameTime)")
                 continue
             }
@@ -629,7 +625,7 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
                 try NSObject.catchException {
                     appendResult = bufferInput.append(buffer, withPresentationTime: frameTime)
                 }
-                if (!appendResult) {
+                if !appendResult {
                     print("MovieOutput WARNING: Trouble appending pixel buffer at time: \(frameTime) \(String(describing: assetWriter.error))")
                     continue
                 }
@@ -651,7 +647,7 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
         guard assetWriter.status != .writing && assetWriter.status != .completed else {
             throw MovieOutputError.activeAudioTrackError
         }
-        assetWriterAudioInput = AVAssetWriterInput(mediaType:.audio, outputSettings:self.audioSettings, sourceFormatHint:self.audioSourceFormatHint)
+        assetWriterAudioInput = AVAssetWriterInput(mediaType: .audio, outputSettings: self.audioSettings, sourceFormatHint: self.audioSourceFormatHint)
         let assetWriter = self.assetWriter
         let audioInpupt = self.assetWriterAudioInput!
         try NSObject.catchException {
@@ -660,7 +656,7 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
         assetWriterAudioInput?.expectsMediaDataInRealTime = encodingLiveVideo
     }
     
-    public func processAudioBuffer(_ sampleBuffer:CMSampleBuffer, shouldInvalidateSampleWhenDone:Bool) {
+    public func processAudioBuffer(_ sampleBuffer: CMSampleBuffer, shouldInvalidateSampleWhenDone: Bool) {
         let work = { [weak self] in
             _ = self?._processAudioSampleBuffer(sampleBuffer, shouldInvalidateSampleWhenDone: shouldInvalidateSampleWhenDone)
         }
@@ -724,8 +720,7 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
                     CMSampleBufferInvalidate(audioBuffer)
                 }
                 processedBufferCount += 1
-            }
-            catch {
+            } catch {
                 print("MovieOutput WARNING: Trouble appending audio sample buffer: \(error)")
                 continue
             }
@@ -782,20 +777,19 @@ public class MovieOutput: ImageConsumer, AudioEncodingTarget {
     }
     
     func synchronizedEncodingDebugPrint(_ string: String) {
-        if(synchronizedEncodingDebug && !encodingLiveVideo) { print(string) }
+        if synchronizedEncodingDebug && !encodingLiveVideo { print(string) }
     }
 }
 
-
 public extension Timestamp {
-    init(_ time:CMTime) {
+    init(_ time: CMTime) {
         self.value = time.value
         self.timescale = time.timescale
-        self.flags = TimestampFlags(rawValue:time.flags.rawValue)
+        self.flags = TimestampFlags(rawValue: time.flags.rawValue)
         self.epoch = time.epoch
     }
     
-    var asCMTime:CMTime {
+    var asCMTime: CMTime {
         get {
             return CMTimeMakeWithEpoch(value: value, timescale: timescale, epoch: epoch)
         }

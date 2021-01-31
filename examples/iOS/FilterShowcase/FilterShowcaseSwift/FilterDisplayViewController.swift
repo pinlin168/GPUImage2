@@ -5,17 +5,15 @@ import AVFoundation
 let blendImageName = "WID-small.jpg"
 
 class FilterDisplayViewController: UIViewController, UISplitViewControllerDelegate {
-
     @IBOutlet var filterSlider: UISlider?
     @IBOutlet var filterView: RenderView?
     
-    let videoCamera:Camera?
-    var blendImage:PictureInput?
+    let videoCamera: Camera?
+    var blendImage: PictureInput?
 
-    required init(coder aDecoder: NSCoder)
-    {
+    required init(coder aDecoder: NSCoder) {
         do {
-            videoCamera = try Camera(sessionPreset:AVCaptureSession.Preset.vga640x480, location:.backFacing)
+            videoCamera = try Camera(sessionPreset: AVCaptureSession.Preset.vga640x480, location: .backFacing)
             videoCamera!.runBenchmark = true
         } catch {
             videoCamera = nil
@@ -45,7 +43,7 @@ class FilterDisplayViewController: UIViewController, UISplitViewControllerDelega
                     currentFilterConfiguration.filter.addTarget(view)
                 case .blend:
                     videoCamera.addTarget(currentFilterConfiguration.filter)
-                    self.blendImage = try? PictureInput(imageName:blendImageName)
+                    self.blendImage = try? PictureInput(imageName: blendImageName)
                     self.blendImage?.addTarget(currentFilterConfiguration.filter)
                     self.blendImage?.processImage()
                     currentFilterConfiguration.filter.addTarget(view)
@@ -76,8 +74,8 @@ class FilterDisplayViewController: UIViewController, UISplitViewControllerDelega
     
     @IBAction func updateSliderValue() {
         if let currentFilterConfiguration = self.filterOperation {
-            switch (currentFilterConfiguration.sliderConfiguration) {
-                case .enabled(_, _, _): currentFilterConfiguration.updateBasedOnSliderValue(Float(self.filterSlider!.value))
+            switch currentFilterConfiguration.sliderConfiguration {
+                case .enabled: currentFilterConfiguration.updateBasedOnSliderValue(Float(self.filterSlider!.value))
                 case .disabled: break
             }
         }
@@ -104,4 +102,3 @@ class FilterDisplayViewController: UIViewController, UISplitViewControllerDelega
     }
 
 }
-

@@ -11,9 +11,8 @@ public class MissEtikateFilter: LookupFilter {
         super.init()
         
         do {
-            try ({lookupImage = try PictureInput(imageName:"lookup_miss_etikate.png")})()
-        }
-        catch {
+            try ({ lookupImage = try PictureInput(imageName: "lookup_miss_etikate.png") })()
+        } catch {
             print("ERROR: Unable to create PictureInput \(error)")
         }
     }

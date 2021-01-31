@@ -32,31 +32,31 @@ public enum HistogramType {
 }
 
 public class Histogram: BasicOperation {
-    public var downsamplingFactor:UInt = 16
+    public var downsamplingFactor: UInt = 16
     
-    var shader2:ShaderProgram? = nil
-    var shader3:ShaderProgram? = nil
+    var shader2: ShaderProgram?
+    var shader3: ShaderProgram?
     
-    public init(type:HistogramType) {
+    public init(type: HistogramType) {
         switch type {
-            case .red: super.init(vertexShader:HistogramRedSamplingVertexShader, fragmentShader:HistogramAccumulationFragmentShader, numberOfInputs:1)
-            case .blue: super.init(vertexShader:HistogramBlueSamplingVertexShader, fragmentShader:HistogramAccumulationFragmentShader, numberOfInputs:1)
-            case .green: super.init(vertexShader:HistogramGreenSamplingVertexShader, fragmentShader:HistogramAccumulationFragmentShader, numberOfInputs:1)
-            case .luminance: super.init(vertexShader:HistogramLuminanceSamplingVertexShader, fragmentShader:HistogramAccumulationFragmentShader, numberOfInputs:1)
+            case .red: super.init(vertexShader: HistogramRedSamplingVertexShader, fragmentShader: HistogramAccumulationFragmentShader, numberOfInputs: 1)
+            case .blue: super.init(vertexShader: HistogramBlueSamplingVertexShader, fragmentShader: HistogramAccumulationFragmentShader, numberOfInputs: 1)
+            case .green: super.init(vertexShader: HistogramGreenSamplingVertexShader, fragmentShader: HistogramAccumulationFragmentShader, numberOfInputs: 1)
+            case .luminance: super.init(vertexShader: HistogramLuminanceSamplingVertexShader, fragmentShader: HistogramAccumulationFragmentShader, numberOfInputs: 1)
             case .rgb:
-                super.init(vertexShader:HistogramRedSamplingVertexShader, fragmentShader:HistogramAccumulationFragmentShader, numberOfInputs:1)
-                shader2 = crashOnShaderCompileFailure("Histogram"){try sharedImageProcessingContext.programForVertexShader(HistogramGreenSamplingVertexShader, fragmentShader:HistogramAccumulationFragmentShader)}
-                shader3 = crashOnShaderCompileFailure("Histogram"){try sharedImageProcessingContext.programForVertexShader(HistogramBlueSamplingVertexShader, fragmentShader:HistogramAccumulationFragmentShader)}
+                super.init(vertexShader: HistogramRedSamplingVertexShader, fragmentShader: HistogramAccumulationFragmentShader, numberOfInputs: 1)
+                shader2 = crashOnShaderCompileFailure("Histogram") { try sharedImageProcessingContext.programForVertexShader(HistogramGreenSamplingVertexShader, fragmentShader: HistogramAccumulationFragmentShader) }
+                shader3 = crashOnShaderCompileFailure("Histogram") { try sharedImageProcessingContext.programForVertexShader(HistogramBlueSamplingVertexShader, fragmentShader: HistogramAccumulationFragmentShader) }
         }
     }
     
     override open func renderFrame() {
         let inputSize = sizeOfInitialStageBasedOnFramebuffer(inputFramebuffers[0]!)
         let inputByteSize = Int(inputSize.width * inputSize.height * 4)
-        let data = UnsafeMutablePointer<UInt8>.allocate(capacity:inputByteSize)
+        let data = UnsafeMutablePointer<UInt8>.allocate(capacity: inputByteSize)
         glReadPixels(0, 0, inputSize.width, inputSize.height, GLenum(GL_RGBA), GLenum(GL_UNSIGNED_BYTE), data)
 
-        renderFramebuffer = sharedImageProcessingContext.framebufferCache.requestFramebufferWithProperties(orientation:.portrait, size:GLSize(width:256, height:3), stencil:mask != nil)
+        renderFramebuffer = sharedImageProcessingContext.framebufferCache.requestFramebufferWithProperties(orientation: .portrait, size: GLSize(width: 256, height: 3), stencil: mask != nil)
         releaseIncomingFramebuffers()
         renderFramebuffer.activateFramebufferForRendering()
         

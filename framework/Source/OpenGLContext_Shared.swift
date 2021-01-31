@@ -1,4 +1,3 @@
-
 #if os(Linux)
 #if GLES
     import COpenGLES.gles2
@@ -18,14 +17,14 @@ import Foundation
 public let sharedImageProcessingContext = OpenGLContext()
 
 extension OpenGLContext {
-    public func programForVertexShader(_ vertexShader:String, fragmentShader:String) throws -> ShaderProgram {
-        return try self.runOperationSynchronously{
+    public func programForVertexShader(_ vertexShader: String, fragmentShader: String) throws -> ShaderProgram {
+        return try self.runOperationSynchronously {
             let lookupKeyForShaderProgram = "V: \(vertexShader) - F: \(fragmentShader)"
             if let shaderFromCache = shaderCache[lookupKeyForShaderProgram] {
 //                debugPrint("load from cache: \(lookupKeyForShaderProgram)")
                 return shaderFromCache
             } else {
-                let program = try ShaderProgram(vertexShader:vertexShader, fragmentShader:fragmentShader)
+                let program = try ShaderProgram(vertexShader: vertexShader, fragmentShader: fragmentShader)
                 self.shaderCache[lookupKeyForShaderProgram] = program
 //                debugPrint("create cache: \(lookupKeyForShaderProgram)")
                 return program
@@ -33,24 +32,24 @@ extension OpenGLContext {
         }
     }
 
-    public func programForVertexShader(_ vertexShader:String, fragmentShader:URL) throws -> ShaderProgram {
-        return try programForVertexShader(vertexShader, fragmentShader:try shaderFromFile(fragmentShader))
+    public func programForVertexShader(_ vertexShader: String, fragmentShader: URL) throws -> ShaderProgram {
+        return try programForVertexShader(vertexShader, fragmentShader: try shaderFromFile(fragmentShader))
     }
     
-    public func programForVertexShader(_ vertexShader:URL, fragmentShader:URL) throws -> ShaderProgram {
-        return try programForVertexShader(try shaderFromFile(vertexShader), fragmentShader:try shaderFromFile(fragmentShader))
+    public func programForVertexShader(_ vertexShader: URL, fragmentShader: URL) throws -> ShaderProgram {
+        return try programForVertexShader(try shaderFromFile(vertexShader), fragmentShader: try shaderFromFile(fragmentShader))
     }
     
-    public func openGLDeviceSettingForOption(_ option:Int32) -> GLint {
-        return self.runOperationSynchronously{() -> GLint in
+    public func openGLDeviceSettingForOption(_ option: Int32) -> GLint {
+        return self.runOperationSynchronously {() -> GLint in
             self.makeCurrentContext()
-            var openGLValue:GLint = 0
+            var openGLValue: GLint = 0
             glGetIntegerv(GLenum(option), &openGLValue)
             return openGLValue
         }
     }
  
-    public func deviceSupportsExtension(_ openGLExtension:String) -> Bool {
+    public func deviceSupportsExtension(_ openGLExtension: String) -> Bool {
 #if os(Linux)
         return false
 #else
@@ -68,51 +67,49 @@ extension OpenGLContext {
         return deviceSupportsExtension("GL_EXT_shader_framebuffer_fetch")
     }
     
-    public func sizeThatFitsWithinATextureForSize(_ size:Size) -> Size {
+    public func sizeThatFitsWithinATextureForSize(_ size: Size) -> Size {
         let maxTextureSize = Float(self.maximumTextureSizeForThisDevice)
-        if ( (size.width < maxTextureSize) && (size.height < maxTextureSize) ) {
+        if  (size.width < maxTextureSize) && (size.height < maxTextureSize) {
             return size
         }
         
-        let adjustedSize:Size
-        if (size.width > size.height) {
-            adjustedSize = Size(width:maxTextureSize, height:(maxTextureSize / size.width) * size.height)
+        let adjustedSize: Size
+        if size.width > size.height {
+            adjustedSize = Size(width: maxTextureSize, height: (maxTextureSize / size.width) * size.height)
         } else {
-            adjustedSize = Size(width:(maxTextureSize / size.height) * size.width, height:maxTextureSize)
+            adjustedSize = Size(width: (maxTextureSize / size.height) * size.width, height: maxTextureSize)
         }
         
         return adjustedSize
     }
     
     func generateTextureVBOs() {
-        textureVBOs[.noRotation] = generateVBO(for:Rotation.noRotation.textureCoordinates())
-        textureVBOs[.rotateCounterclockwise] = generateVBO(for:Rotation.rotateCounterclockwise.textureCoordinates())
-        textureVBOs[.rotateClockwise] = generateVBO(for:Rotation.rotateClockwise.textureCoordinates())
-        textureVBOs[.rotate180] = generateVBO(for:Rotation.rotate180.textureCoordinates())
-        textureVBOs[.flipHorizontally] = generateVBO(for:Rotation.flipHorizontally.textureCoordinates())
-        textureVBOs[.flipVertically] = generateVBO(for:Rotation.flipVertically.textureCoordinates())
-        textureVBOs[.rotateClockwiseAndFlipVertically] = generateVBO(for:Rotation.rotateClockwiseAndFlipVertically.textureCoordinates())
-        textureVBOs[.rotateClockwiseAndFlipHorizontally] = generateVBO(for:Rotation.rotateClockwiseAndFlipHorizontally.textureCoordinates())
+        textureVBOs[.noRotation] = generateVBO(for: Rotation.noRotation.textureCoordinates())
+        textureVBOs[.rotateCounterclockwise] = generateVBO(for: Rotation.rotateCounterclockwise.textureCoordinates())
+        textureVBOs[.rotateClockwise] = generateVBO(for: Rotation.rotateClockwise.textureCoordinates())
+        textureVBOs[.rotate180] = generateVBO(for: Rotation.rotate180.textureCoordinates())
+        textureVBOs[.flipHorizontally] = generateVBO(for: Rotation.flipHorizontally.textureCoordinates())
+        textureVBOs[.flipVertically] = generateVBO(for: Rotation.flipVertically.textureCoordinates())
+        textureVBOs[.rotateClockwiseAndFlipVertically] = generateVBO(for: Rotation.rotateClockwiseAndFlipVertically.textureCoordinates())
+        textureVBOs[.rotateClockwiseAndFlipHorizontally] = generateVBO(for: Rotation.rotateClockwiseAndFlipHorizontally.textureCoordinates())
     }
     
-    public func textureVBO(for rotation:Rotation) -> GLuint {
-        guard let textureVBO = textureVBOs[rotation] else {fatalError("GPUImage doesn't have a texture VBO set for the rotation \(rotation)") }
+    public func textureVBO(for rotation: Rotation) -> GLuint {
+        guard let textureVBO = textureVBOs[rotation] else { fatalError("GPUImage doesn't have a texture VBO set for the rotation \(rotation)") }
         return textureVBO
     }
 }
 
-public var GPUImageLogger: (String, StaticString, UInt, StaticString) -> () = { stringToPrint, file, line, function in
-    Swift.print("\(stringToPrint) --> \((String(describing:file) as NSString).lastPathComponent): \(function): \(line)")
+public var GPUImageLogger: (String, StaticString, UInt, StaticString) -> Void = { stringToPrint, file, line, function in
+    Swift.print("\(stringToPrint) --> \((String(describing: file) as NSString).lastPathComponent): \(function): \(line)")
 }
 
-@_semantics("sil.optimize.never") public func debugPrint(_ stringToPrint:String, file: StaticString = #file, line: UInt = #line, function: StaticString = #function) {
+@_semantics("sil.optimize.never") public func debugPrint(_ stringToPrint: String, file: StaticString = #file, line: UInt = #line, function: StaticString = #function) {
     #if DEBUG
     print("[GPUImage] " + stringToPrint, file: file, line: line, function: function)
     #endif
 }
 
-@_semantics("sil.optimize.never") public func print(_ stringToPrint:String, file: StaticString = #file, line: UInt = #line, function: StaticString = #function) {
+@_semantics("sil.optimize.never") public func print(_ stringToPrint: String, file: StaticString = #file, line: UInt = #line, function: StaticString = #function) {
     GPUImageLogger(stringToPrint, file, line, function)
 }
-
-

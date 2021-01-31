@@ -25,24 +25,24 @@
 */
 
 public class HarrisCornerDetector: OperationGroup {
-    public var blurRadiusInPixels:Float = 2.0 { didSet { gaussianBlur.blurRadiusInPixels = blurRadiusInPixels } }
-    public var sensitivity:Float = 5.0 { didSet { harrisCornerDetector.uniformSettings["sensitivity"] = sensitivity } }
-    public var threshold:Float = 0.2 { didSet { nonMaximumSuppression.uniformSettings["threshold"] = threshold } }
-    public var cornersDetectedCallback:(([Position]) -> ())?
+    public var blurRadiusInPixels: Float = 2.0 { didSet { gaussianBlur.blurRadiusInPixels = blurRadiusInPixels } }
+    public var sensitivity: Float = 5.0 { didSet { harrisCornerDetector.uniformSettings["sensitivity"] = sensitivity } }
+    public var threshold: Float = 0.2 { didSet { nonMaximumSuppression.uniformSettings["threshold"] = threshold } }
+    public var cornersDetectedCallback: (([Position]) -> Void)?
 
-    let xyDerivative = TextureSamplingOperation(fragmentShader:XYDerivativeFragmentShader)
+    let xyDerivative = TextureSamplingOperation(fragmentShader: XYDerivativeFragmentShader)
     let gaussianBlur = GaussianBlur()
-    let harrisCornerDetector:BasicOperation
-    let nonMaximumSuppression = TextureSamplingOperation(fragmentShader:ThresholdedNonMaximumSuppressionFragmentShader)
+    let harrisCornerDetector: BasicOperation
+    let nonMaximumSuppression = TextureSamplingOperation(fragmentShader: ThresholdedNonMaximumSuppressionFragmentShader)
     
-    public init(fragmentShader:String = HarrisCornerDetectorFragmentShader) {
-        harrisCornerDetector = BasicOperation(fragmentShader:fragmentShader)
+    public init(fragmentShader: String = HarrisCornerDetectorFragmentShader) {
+        harrisCornerDetector = BasicOperation(fragmentShader: fragmentShader)
         
         super.init()
         
-        ({blurRadiusInPixels = 2.0})()
-        ({sensitivity = 5.0})()
-        ({threshold = 0.2})()
+        ({ blurRadiusInPixels = 2.0 })()
+        ({ sensitivity = 5.0 })()
+        ({ threshold = 0.2 })()
         
         outputImageRelay.newImageCallback = {[weak self] framebuffer in
             if let cornersDetectedCallback = self?.cornersDetectedCallback {
@@ -50,19 +50,19 @@ public class HarrisCornerDetector: OperationGroup {
             }
         }
         
-        self.configureGroup{input, output in
+        self.configureGroup {input, output in
             input --> self.xyDerivative --> self.gaussianBlur --> self.harrisCornerDetector --> self.nonMaximumSuppression --> output
         }
     }
 }
 
-func extractCornersFromImage(_ framebuffer:Framebuffer) -> [Position] {
+func extractCornersFromImage(_ framebuffer: Framebuffer) -> [Position] {
     let imageByteSize = Int(framebuffer.size.width * framebuffer.size.height * 4)
 //    var rawImagePixels = [UInt8](count:imageByteSize, repeatedValue:0)
     
 //    let startTime = CACurrentMediaTime()
 
-    let rawImagePixels = UnsafeMutablePointer<UInt8>.allocate(capacity:imageByteSize)
+    let rawImagePixels = UnsafeMutablePointer<UInt8>.allocate(capacity: imageByteSize)
     // -Onone, [UInt8] array: 30 ms for 720p frame on Retina iMac
     // -O, [UInt8] array: 4 ms for 720p frame on Retina iMac
     // -Onone, UnsafeMutablePointer<UInt8>: 7 ms for 720p frame on Retina iMac
@@ -76,10 +76,10 @@ func extractCornersFromImage(_ framebuffer:Framebuffer) -> [Position] {
     var corners = [Position]()
     
     var currentByte = 0
-    while (currentByte < imageByteSize) {
+    while currentByte < imageByteSize {
         let colorByte = rawImagePixels[currentByte]
         
-        if (colorByte > 0) {
+        if colorByte > 0 {
             let xCoordinate = currentByte % imageWidth
             let yCoordinate = currentByte / imageWidth
             

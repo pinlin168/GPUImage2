@@ -1,11 +1,11 @@
 public class SingleComponentGaussianBlur: TwoStageOperation {
-    public var blurRadiusInPixels:Float {
+    public var blurRadiusInPixels: Float {
         didSet {
-            let (sigma, downsamplingFactor) = sigmaAndDownsamplingForBlurRadius(blurRadiusInPixels, limit:8.0, override:overrideDownsamplingOptimization)
+            let (sigma, downsamplingFactor) = sigmaAndDownsamplingForBlurRadius(blurRadiusInPixels, limit: 8.0, override: overrideDownsamplingOptimization)
             sharedImageProcessingContext.runOperationAsynchronously {
                 self.downsamplingFactor = downsamplingFactor
                 let pixelRadius = pixelRadiusForBlurSigma(Double(sigma))
-                self.shader = crashOnShaderCompileFailure("GaussianBlur"){try sharedImageProcessingContext.programForVertexShader(vertexShaderForOptimizedGaussianBlurOfRadius(pixelRadius, sigma:Double(sigma)), fragmentShader:fragmentShaderForOptimizedSingleComponentGaussianBlurOfRadius(pixelRadius, sigma:Double(sigma)))}
+                self.shader = crashOnShaderCompileFailure("GaussianBlur") { try sharedImageProcessingContext.programForVertexShader(vertexShaderForOptimizedGaussianBlurOfRadius(pixelRadius, sigma: Double(sigma)), fragmentShader: fragmentShaderForOptimizedSingleComponentGaussianBlurOfRadius(pixelRadius, sigma: Double(sigma))) }
             }
         }
     }
@@ -13,16 +13,16 @@ public class SingleComponentGaussianBlur: TwoStageOperation {
     public init() {
         blurRadiusInPixels = 2.0
         let pixelRadius = pixelRadiusForBlurSigma(Double(blurRadiusInPixels))
-        let initialShader = crashOnShaderCompileFailure("GaussianBlur"){try sharedImageProcessingContext.programForVertexShader(vertexShaderForOptimizedGaussianBlurOfRadius(pixelRadius, sigma:2.0), fragmentShader:fragmentShaderForOptimizedSingleComponentGaussianBlurOfRadius(pixelRadius, sigma:2.0))}
-        super.init(shader:initialShader, numberOfInputs:1)
+        let initialShader = crashOnShaderCompileFailure("GaussianBlur") { try sharedImageProcessingContext.programForVertexShader(vertexShaderForOptimizedGaussianBlurOfRadius(pixelRadius, sigma: 2.0), fragmentShader: fragmentShaderForOptimizedSingleComponentGaussianBlurOfRadius(pixelRadius, sigma: 2.0)) }
+        super.init(shader: initialShader, numberOfInputs: 1)
     }
     
 }
 
-func fragmentShaderForOptimizedSingleComponentGaussianBlurOfRadius(_ radius:UInt, sigma:Double) -> String {
-    guard (radius > 0) else { return PassthroughFragmentShader }
+func fragmentShaderForOptimizedSingleComponentGaussianBlurOfRadius(_ radius: UInt, sigma: Double) -> String {
+    guard radius > 0 else { return PassthroughFragmentShader }
     
-    let standardWeights = standardGaussianWeightsForRadius(radius, sigma:sigma)
+    let standardWeights = standardGaussianWeightsForRadius(radius, sigma: sigma)
     let numberOfOptimizedOffsets = min(radius / 2 + (radius % 2), 7)
     let trueNumberOfOptimizedOffsets = radius / 2 + (radius % 2)
     
@@ -45,7 +45,7 @@ func fragmentShaderForOptimizedSingleComponentGaussianBlurOfRadius(_ radius:UInt
     }
     
     // If the number of required samples exceeds the amount we can pass in via varyings, we have to do dependent texture reads in the fragment shader
-    if (trueNumberOfOptimizedOffsets > numberOfOptimizedOffsets) {
+    if trueNumberOfOptimizedOffsets > numberOfOptimizedOffsets {
         #if GLES
             shaderString += "highp vec2 singleStepOffset = vec2(texelWidth, texelHeight);\n"
         #else
@@ -54,8 +54,8 @@ func fragmentShaderForOptimizedSingleComponentGaussianBlurOfRadius(_ radius:UInt
     }
     
     for currentOverlowTextureRead in numberOfOptimizedOffsets..<trueNumberOfOptimizedOffsets {
-        let firstWeight = standardWeights[Int(currentOverlowTextureRead * 2 + 1)];
-        let secondWeight = standardWeights[Int(currentOverlowTextureRead * 2 + 2)];
+        let firstWeight = standardWeights[Int(currentOverlowTextureRead * 2 + 1)]
+        let secondWeight = standardWeights[Int(currentOverlowTextureRead * 2 + 2)]
         
         let optimizedWeight = firstWeight + secondWeight
         let optimizedOffset = (firstWeight * (Double(currentOverlowTextureRead) * 2.0 + 1.0) + secondWeight * (Double(currentOverlowTextureRead) * 2.0 + 2.0)) / optimizedWeight

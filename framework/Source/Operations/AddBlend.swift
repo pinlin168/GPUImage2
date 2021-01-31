@@ -1,6 +1,5 @@
 public class AddBlend: BasicOperation {
-    
     public init() {
-        super.init(fragmentShader:AddBlendFragmentShader, numberOfInputs:2)
+        super.init(fragmentShader: AddBlendFragmentShader, numberOfInputs: 2)
     }
 }

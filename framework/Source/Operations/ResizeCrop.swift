@@ -54,7 +54,7 @@ public func calculateResizeOutput(inputSize: Size, outputSize: Size?, scaleOutpu
                                               (inputSize.height - cropSizeInOrigin.height) / 2 / inputSize.height)
     } else {
         finalCropSize = inputSize
-        normalizedOffsetFromOrigin  = Position.zero
+        normalizedOffsetFromOrigin = Position.zero
         normalizedCropSize = Size(width: 1, height: 1)
     }
     
@@ -66,11 +66,11 @@ open class ResizeCrop: BasicOperation {
     public var cropSizeInPixels: Size?
     
     public init() {
-        super.init(fragmentShader:PassthroughFragmentShader, numberOfInputs:1)
+        super.init(fragmentShader: PassthroughFragmentShader, numberOfInputs: 1)
     }
     
     override open func renderFrame() {
-        let inputFramebuffer:Framebuffer = inputFramebuffers[0]!
+        let inputFramebuffer: Framebuffer = inputFramebuffers[0]!
         let inputGLSize = inputFramebuffer.sizeForTargetOrientation(.portrait)
         let inputSize = Size(inputGLSize)
 
@@ -81,11 +81,11 @@ open class ResizeCrop: BasicOperation {
             size: GLSize(resizeOutputInfo.finalCropSize),
             stencil: false)
         
-        let textureProperties = InputTextureProperties(textureCoordinates:inputFramebuffer.orientation.rotationNeededForOrientation(.portrait).croppedTextureCoordinates(offsetFromOrigin:resizeOutputInfo.normalizedOffsetFromOrigin, cropSize:resizeOutputInfo.normalizedCropSize), texture:inputFramebuffer.texture)
+        let textureProperties = InputTextureProperties(textureCoordinates: inputFramebuffer.orientation.rotationNeededForOrientation(.portrait).croppedTextureCoordinates(offsetFromOrigin: resizeOutputInfo.normalizedOffsetFromOrigin, cropSize: resizeOutputInfo.normalizedCropSize), texture: inputFramebuffer.texture)
         
         renderFramebuffer.activateFramebufferForRendering()
         clearFramebufferWithColor(backgroundColor)
-        renderQuadWithShader(shader, uniformSettings:uniformSettings, vertexBufferObject:sharedImageProcessingContext.standardImageVBO, inputTextures:[textureProperties])
+        renderQuadWithShader(shader, uniformSettings: uniformSettings, vertexBufferObject: sharedImageProcessingContext.standardImageVBO, inputTextures: [textureProperties])
         releaseIncomingFramebuffers()
     }
 }

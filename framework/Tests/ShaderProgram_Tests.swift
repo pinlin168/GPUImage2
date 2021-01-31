@@ -6,14 +6,12 @@ public let TestBrokenVertexShader = "attribute vec4 position;\n attribute vec4 i
 public let TestBrokenFragmentShader = "varying vec2 textureCoordinate;\n \n uniform sampler2D inputImageTexture;\n \n void ma)\n {\n     gl_FragColor = texture2D(inputImageTexture, textureCoordinate);\n }\n "
 public let TestMismatchedFragmentShader = "varying vec2 textureCoordinateF;\n \n uniform sampler2D inputImageTexture;\n \n void main()\n {\n     gl_FragColor = texture2D(inputImageTexture, textureCoordinate);\n }\n "
 
-
 class ShaderProgram_Tests: XCTestCase {
-
     func testExample() {
         sharedImageProcessingContext.makeCurrentContext()
         
         do {
-            let shaderProgram = try ShaderProgram(vertexShader:TestVertexShader, fragmentShader:TestFragmentShader)
+            let shaderProgram = try ShaderProgram(vertexShader: TestVertexShader, fragmentShader: TestFragmentShader)
             let temporaryPosition = shaderProgram.attributeIndex("position")
             XCTAssert(temporaryPosition != nil, "Could not find position attribute")
             XCTAssert(temporaryPosition == shaderProgram.attributeIndex("position"), "Could not retrieve the same position attribute")
@@ -30,15 +28,15 @@ class ShaderProgram_Tests: XCTestCase {
             XCTFail("Should not have thrown error during shader compilation: \(error)")
         }
 
-        if ((try? ShaderProgram(vertexShader:TestBrokenVertexShader, fragmentShader:TestFragmentShader)) != nil) {
+        if (try? ShaderProgram(vertexShader: TestBrokenVertexShader, fragmentShader: TestFragmentShader)) != nil {
             XCTFail("Program should not have compiled correctly")
         }
 
-        if ((try? ShaderProgram(vertexShader:TestVertexShader, fragmentShader:TestBrokenFragmentShader)) != nil) {
+        if (try? ShaderProgram(vertexShader: TestVertexShader, fragmentShader: TestBrokenFragmentShader)) != nil {
             XCTFail("Program should not have compiled correctly")
         }
 
-        if ((try? ShaderProgram(vertexShader:TestVertexShader, fragmentShader:TestMismatchedFragmentShader)) != nil) {
+        if (try? ShaderProgram(vertexShader: TestVertexShader, fragmentShader: TestMismatchedFragmentShader)) != nil {
             XCTFail("Program should not have compiled correctly")
         }
     }

@@ -4,18 +4,17 @@ import AVFoundation
 
 @NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate {
+    @IBOutlet weak var window: NSWindow!
+    @IBOutlet var renderView: RenderView!
 
-    @IBOutlet weak var window:NSWindow!
-    @IBOutlet var renderView:RenderView!
-
-    var camera:Camera!
-    var filter:SmoothToonFilter!
-    var movieOutput:MovieOutput?
+    var camera: Camera!
+    var filter: SmoothToonFilter!
+    var movieOutput: MovieOutput?
     var isRecording = false
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         do {
-            camera = try Camera(sessionPreset:AVCaptureSessionPreset640x480)
+            camera = try Camera(sessionPreset: AVCaptureSessionPreset640x480)
             filter = SmoothToonFilter()
             
             camera --> filter --> renderView
@@ -31,7 +30,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     @IBAction func record(_ sender: AnyObject) {
-        if (!isRecording) {
+        if !isRecording {
             let movieSavingDialog = NSSavePanel()
             movieSavingDialog.allowedFileTypes = ["mp4"]
             let okayButton = movieSavingDialog.runModal()
@@ -40,7 +39,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 do {
                     self.isRecording = true
 //                    movieOutput = try MovieOutput(URL:movieSavingDialog.url!, size:Size(width:1280, height:720), liveVideo:true)
-                    movieOutput = try MovieOutput(URL:movieSavingDialog.url!, size:Size(width:640, height:480), liveVideo:true)
+                    movieOutput = try MovieOutput(URL: movieSavingDialog.url!, size: Size(width: 640, height: 480), liveVideo: true)
 //                    camera.audioEncodingTarget = movieOutput
                     filter --> movieOutput!
                     movieOutput!.startRecording()
@@ -50,7 +49,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         } else {
-            movieOutput?.finishRecording{
+            movieOutput?.finishRecording {
                 self.isRecording = false
                 DispatchQueue.main.async {
                     (sender as! NSButton).title = "Record"
@@ -62,4 +61,3 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
 }
-

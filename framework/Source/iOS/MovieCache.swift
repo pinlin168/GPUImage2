@@ -76,14 +76,14 @@ public class MovieCache: ImageConsumer, AudioEncodingTarget {
                                          fps: Double,
                                          size: Size,
                                          needAlignAV: Bool,
-                                         fileType:AVFileType = .mov,
-                                         liveVideo:Bool = false,
-                                         videoSettings:[String:Any]? = nil,
-                                         videoNaturalTimeScale:CMTimeScale? = nil,
+                                         fileType: AVFileType = .mov,
+                                         liveVideo: Bool = false,
+                                         videoSettings: [String: Any]? = nil,
+                                         videoNaturalTimeScale: CMTimeScale? = nil,
                                          optimizeForNetworkUse: Bool = false,
                                          disablePixelBufferAttachments: Bool = true,
-                                         audioSettings:[String:Any]? = nil,
-                                         audioSourceFormatHint:CMFormatDescription? = nil,
+                                         audioSettings: [String: Any]? = nil,
+                                         audioSourceFormatHint: CMFormatDescription? = nil,
                                          _ configure: ((MovieOutput) -> Void)? = nil) {
         MovieOutput.movieProcessingContext.runOperationAsynchronously { [weak self] in
             self?._setMovieOutputIfNotReady(url: url,
@@ -146,7 +146,7 @@ extension MovieCache {
         _writeAudioSampleBuffers(shouldInvalidateSampleWhenDone)
     }
     
-    public func processVideoBuffer(_ sampleBuffer: CMSampleBuffer, shouldInvalidateSampleWhenDone:Bool) {
+    public func processVideoBuffer(_ sampleBuffer: CMSampleBuffer, shouldInvalidateSampleWhenDone: Bool) {
         guard shouldProcessBuffer else { return }
         _cacheVideoSampleBuffer(sampleBuffer)
         _writeVideoSampleBuffers(shouldInvalidateSampleWhenDone)
@@ -202,11 +202,11 @@ private extension MovieCache {
                                    needAlignAV: Bool,
                                    fileType: AVFileType = .mov,
                                    liveVideo: Bool = false,
-                                   videoSettings: [String:Any]? = nil,
+                                   videoSettings: [String: Any]? = nil,
                                    videoNaturalTimeScale: CMTimeScale? = nil,
                                    optimizeForNetworkUse: Bool = false,
                                    disablePixelBufferAttachments: Bool = true,
-                                   audioSettings: [String:Any]? = nil,
+                                   audioSettings: [String: Any]? = nil,
                                    audioSourceFormatHint: CMFormatDescription? = nil,
                                    _ configure: ((MovieOutput) -> Void)? = nil) {
         guard !isReadyToWrite else {

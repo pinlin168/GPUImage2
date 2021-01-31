@@ -5,18 +5,18 @@ import UIKit
 #endif
 
 public struct Position {
-    public let x:Float
-    public let y:Float
-    public let z:Float?
+    public let x: Float
+    public let y: Float
+    public let z: Float?
     
-    public init (_ x:Float, _ y:Float, _ z:Float? = nil) {
+    public init (_ x: Float, _ y: Float, _ z: Float? = nil) {
         self.x = x
         self.y = y
         self.z = z
     }
     
 #if !os(Linux)
-    public init(point:CGPoint) {
+    public init(point: CGPoint) {
         self.x = Float(point.x)
         self.y = Float(point.y)
         self.z = nil

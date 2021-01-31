@@ -2,32 +2,31 @@ import OpenGLES
 import UIKit
 
 // TODO: Find a way to warn people if they set this after the context has been created
-var imageProcessingShareGroup:EAGLSharegroup? = nil
+var imageProcessingShareGroup: EAGLSharegroup?
 
 var dispatchQueKeyValueCounter = 81
 
 public class OpenGLContext: SerialDispatch {
-    public private(set) lazy var framebufferCache:FramebufferCache = {
-        return FramebufferCache(context:self)
+    public private(set) lazy var framebufferCache: FramebufferCache = {
+        return FramebufferCache(context: self)
     }()
-    var shaderCache:[String:ShaderProgram] = [:]
-    public let standardImageVBO:GLuint
-    var textureVBOs:[Rotation:GLuint] = [:]
+    var shaderCache: [String: ShaderProgram] = [:]
+    public let standardImageVBO: GLuint
+    var textureVBOs: [Rotation: GLuint] = [:]
 
-    public let context:EAGLContext
+    public let context: EAGLContext
     
-    public private(set) lazy var passthroughShader:ShaderProgram = {
-        return crashOnShaderCompileFailure("OpenGLContext"){return try self.programForVertexShader(OneInputVertexShader, fragmentShader:PassthroughFragmentShader)}
+    public private(set) lazy var passthroughShader: ShaderProgram = {
+        return crashOnShaderCompileFailure("OpenGLContext") { return try self.programForVertexShader(OneInputVertexShader, fragmentShader: PassthroughFragmentShader) }
     }()
 
-    public private(set) lazy var coreVideoTextureCache:CVOpenGLESTextureCache = {
-        var newTextureCache:CVOpenGLESTextureCache? = nil
+    public private(set) lazy var coreVideoTextureCache: CVOpenGLESTextureCache = {
+        var newTextureCache: CVOpenGLESTextureCache?
         let err = CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, nil, self.context, nil, &newTextureCache)
         return newTextureCache!
     }()
     
-    
-    public let serialDispatchQueue:DispatchQueue
+    public let serialDispatchQueue: DispatchQueue
     public let dispatchQueueKey = DispatchSpecificKey<Int>()
     public let dispatchQueueKeyValue: Int
     public var executeStartTime: TimeInterval?
@@ -38,14 +37,14 @@ public class OpenGLContext: SerialDispatch {
     init(queueLabel: String? = nil) {
         serialDispatchQueue = DispatchQueue(label: (queueLabel ?? "com.sunsetlakesoftware.GPUImage.processingQueue"), qos: .userInitiated)
         dispatchQueueKeyValue = dispatchQueKeyValueCounter
-        serialDispatchQueue.setSpecific(key:dispatchQueueKey, value:dispatchQueueKeyValue)
+        serialDispatchQueue.setSpecific(key: dispatchQueueKey, value: dispatchQueueKeyValue)
         dispatchQueKeyValueCounter += 1
         
-        let generatedContext:EAGLContext?
+        let generatedContext: EAGLContext?
         if let shareGroup = imageProcessingShareGroup {
-            generatedContext = EAGLContext(api:.openGLES2, sharegroup:shareGroup)
+            generatedContext = EAGLContext(api: .openGLES2, sharegroup: shareGroup)
         } else {
-            generatedContext = EAGLContext(api:.openGLES2)
+            generatedContext = EAGLContext(api: .openGLES2)
         }
         
         guard let concreteGeneratedContext = generatedContext else {
@@ -55,7 +54,7 @@ public class OpenGLContext: SerialDispatch {
         self.context = concreteGeneratedContext
         EAGLContext.setCurrent(concreteGeneratedContext)
         
-        standardImageVBO = generateVBO(for:standardImageVertices)
+        standardImageVBO = generateVBO(for: standardImageVertices)
         generateTextureVBOs()
 
         glDisable(GLenum(GL_DEPTH_TEST))
@@ -66,8 +65,7 @@ public class OpenGLContext: SerialDispatch {
     // MARK: Rendering
     
     public func makeCurrentContext() {
-        if (EAGLContext.current() != self.context)
-        {
+        if EAGLContext.current() != self.context {
             EAGLContext.setCurrent(self.context)
         }
     }
@@ -75,7 +73,6 @@ public class OpenGLContext: SerialDispatch {
     func presentBufferForDisplay() {
         self.context.presentRenderbuffer(Int(GL_RENDERBUFFER))
     }
-    
     
     // MARK: -
     // MARK: Device capabilities
@@ -88,25 +85,25 @@ public class OpenGLContext: SerialDispatch {
 #endif
     }
     
-    public var maximumTextureSizeForThisDevice:GLint {get { return _maximumTextureSizeForThisDevice } }
-    private lazy var _maximumTextureSizeForThisDevice:GLint = {
+    public var maximumTextureSizeForThisDevice: GLint { get { return _maximumTextureSizeForThisDevice } }
+    private lazy var _maximumTextureSizeForThisDevice: GLint = {
         return self.openGLDeviceSettingForOption(GL_MAX_TEXTURE_SIZE)
     }()
 
-    public var maximumTextureUnitsForThisDevice:GLint {get { return _maximumTextureUnitsForThisDevice } }
-    private lazy var _maximumTextureUnitsForThisDevice:GLint = {
+    public var maximumTextureUnitsForThisDevice: GLint { get { return _maximumTextureUnitsForThisDevice } }
+    private lazy var _maximumTextureUnitsForThisDevice: GLint = {
         return self.openGLDeviceSettingForOption(GL_MAX_TEXTURE_IMAGE_UNITS)
     }()
 
-    public var maximumVaryingVectorsForThisDevice:GLint {get { return _maximumVaryingVectorsForThisDevice } }
-    private lazy var _maximumVaryingVectorsForThisDevice:GLint = {
+    public var maximumVaryingVectorsForThisDevice: GLint { get { return _maximumVaryingVectorsForThisDevice } }
+    private lazy var _maximumVaryingVectorsForThisDevice: GLint = {
         return self.openGLDeviceSettingForOption(GL_MAX_VARYING_VECTORS)
     }()
 
-    lazy var extensionString:String = {
-        return self.runOperationSynchronously{
+    lazy var extensionString: String = {
+        return self.runOperationSynchronously {
             self.makeCurrentContext()
-            return String(cString:unsafeBitCast(glGetString(GLenum(GL_EXTENSIONS)), to:UnsafePointer<CChar>.self))
+            return String(cString: unsafeBitCast(glGetString(GLenum(GL_EXTENSIONS)), to: UnsafePointer<CChar>.self))
         }
     }()
 }

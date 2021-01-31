@@ -16,22 +16,21 @@ let excludes = ["Linux", "Mac"]
 
 #elseif os(Linux)
 
-let excludes =  ["iOS", "Mac"]
+let excludes = ["iOS", "Mac"]
 
 #endif
-
 
 #if os(Linux) || os(macOS) || os(Linux)
 
 let package = Package(
   name: "GPUImage",
   providers: [
-		.Apt("libv4l-dev"), 
-	],
+		.Apt("libv4l-dev") 
+  ],
   targets: [
     Target(name: "GPUImage")
- ],
-  dependencies:[],
+  ],
+  dependencies: [],
   exclude: excludes
   )
   
@@ -39,10 +38,9 @@ let package = Package(
    package.dependencies.append([
         .Package(url: "./Packages/CVideo4Linux", majorVersion: 1),
         .Package(url: "./Packages/COpenGL", majorVersion: 1),
-        .Package(url: "./Packages/CFreeGLUT", majorVersion: 1),
-    ])
+        .Package(url: "./Packages/CFreeGLUT", majorVersion: 1)
+   ])
 #endif
-
 
 #else
 	

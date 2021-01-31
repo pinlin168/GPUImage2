@@ -17,13 +17,13 @@ class ViewController: UIViewController {
     }()
     let saturationFilter = SaturationAdjustment()
     let blendFilter = AlphaBlend()
-    var camera:Camera!
+    var camera: Camera!
 
     override func viewDidLoad() {
         super.viewDidLoad()
         
         do {
-            camera = try Camera(sessionPreset:AVCaptureSessionPreset640x480)
+            camera = try Camera(sessionPreset: AVCaptureSessionPreset640x480)
             camera.runBenchmark = true
             camera.delegate = self
             camera --> saturationFilter --> blendFilter --> renderView
@@ -46,8 +46,8 @@ class ViewController: UIViewController {
     @IBAction func capture(_ sender: AnyObject) {
         print("Capture")
         do {
-            let documentsDir = try FileManager.default.url(for:.documentDirectory, in:.userDomainMask, appropriateFor:nil, create:true)
-            saturationFilter.saveNextFrameToURL(URL(string:"TestImage.png", relativeTo:documentsDir)!, format:.png)
+            let documentsDir = try FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+            saturationFilter.saveNextFrameToURL(URL(string: "TestImage.png", relativeTo: documentsDir)!, format: .png)
         } catch {
             print("Couldn't save image: \(error)")
         }
@@ -78,7 +78,7 @@ extension ViewController: CameraDelegate {
         let flip = CGAffineTransform(scaleX: 1, y: -1)
         let rotate = flip.rotated(by: CGFloat(-M_PI_2))
         let translate = rotate.translatedBy(x: -1, y: -1)
-        let xform = translate.scaledBy(x: CGFloat(2/fbSize.width), y: CGFloat(2/fbSize.height))
+        let xform = translate.scaledBy(x: CGFloat(2 / fbSize.width), y: CGFloat(2 / fbSize.height))
         let glRect = bounds.applying(xform)
 
         let x = Float(glRect.origin.x)

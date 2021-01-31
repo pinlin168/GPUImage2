@@ -11,40 +11,40 @@ public protocol RenderViewDelegate: class {
 }
 
 // TODO: Add support for transparency
-public class RenderView:UIView, ImageConsumer {
-    public weak var delegate:RenderViewDelegate?
+public class RenderView: UIView, ImageConsumer {
+    public weak var delegate: RenderViewDelegate?
     
     public var backgroundRenderColor = Color.black
     public var fillMode = FillMode.preserveAspectRatio
-    public var orientation:ImageOrientation = .portrait
+    public var orientation: ImageOrientation = .portrait
     public var cropFrame: CGRect?
-    public var sizeInPixels:Size { Size(width:Float(frame.size.width * contentScaleFactor), height:Float(frame.size.height * contentScaleFactor)) }
+    public var sizeInPixels: Size { Size(width: Float(frame.size.width * contentScaleFactor), height: Float(frame.size.height * contentScaleFactor)) }
     
     public let sources = SourceContainer()
-    public let maximumInputs:UInt = 1
-    var displayFramebuffer:GLuint?
-    var displayRenderbuffer:GLuint?
-    var backingSize = GLSize(width:0, height:0)
+    public let maximumInputs: UInt = 1
+    var displayFramebuffer: GLuint?
+    var displayRenderbuffer: GLuint?
+    var backingSize = GLSize(width: 0, height: 0)
     var renderSize = CGSize.zero
     private var isAppForeground: Bool = true
     
-    private lazy var displayShader:ShaderProgram = {
+    private lazy var displayShader: ShaderProgram = {
         return sharedImageProcessingContext.passthroughShader
     }()
     
     private var internalLayer: CAEAGLLayer!
     
-    required public init?(coder:NSCoder) {
-        super.init(coder:coder)
+    required public init?(coder: NSCoder) {
+        super.init(coder: coder)
         self.commonInit()
     }
     
-    public override init(frame:CGRect) {
-        super.init(frame:frame)
+    public override init(frame: CGRect) {
+        super.init(frame: frame)
         self.commonInit()
     }
     
-    override public class var layerClass:Swift.AnyClass {
+    override public class var layerClass: Swift.AnyClass {
         get {
             return CAEAGLLayer.self
         }
@@ -69,7 +69,7 @@ public class RenderView:UIView, ImageConsumer {
         
         let eaglLayer = self.layer as! CAEAGLLayer
         eaglLayer.isOpaque = true
-        eaglLayer.drawableProperties = [kEAGLDrawablePropertyRetainedBacking: NSNumber(value:false), kEAGLDrawablePropertyColorFormat: kEAGLColorFormatRGBA8]
+        eaglLayer.drawableProperties = [kEAGLDrawablePropertyRetainedBacking: NSNumber(value: false), kEAGLDrawablePropertyColorFormat: kEAGLColorFormatRGBA8]
         eaglLayer.contentsGravity = CALayerContentsGravity.resizeAspectFill // Just for safety to prevent distortion
         
         NotificationCenter.default.addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
@@ -103,12 +103,12 @@ public class RenderView:UIView, ImageConsumer {
         // Fix crash when calling OpenGL when app is not foreground
         guard isAppForeground else { return false }
         
-        var newDisplayFramebuffer:GLuint = 0
+        var newDisplayFramebuffer: GLuint = 0
         glGenFramebuffers(1, &newDisplayFramebuffer)
         displayFramebuffer = newDisplayFramebuffer
         glBindFramebuffer(GLenum(GL_FRAMEBUFFER), displayFramebuffer!)
         
-        var newDisplayRenderbuffer:GLuint = 0
+        var newDisplayRenderbuffer: GLuint = 0
         glGenRenderbuffers(1, &newDisplayRenderbuffer)
         displayRenderbuffer = newDisplayRenderbuffer
         glBindRenderbuffer(GLenum(GL_RENDERBUFFER), displayRenderbuffer!)
@@ -122,18 +122,18 @@ public class RenderView:UIView, ImageConsumer {
         // and then the view size would change to the new size at the next layout pass and distort our already drawn image.
         // Since we do not call this function often we do not need to worry about the performance impact of calling flush.
         CATransaction.flush()
-        sharedImageProcessingContext.context.renderbufferStorage(Int(GL_RENDERBUFFER), from:self.internalLayer)
+        sharedImageProcessingContext.context.renderbufferStorage(Int(GL_RENDERBUFFER), from: self.internalLayer)
         
-        var backingWidth:GLint = 0
-        var backingHeight:GLint = 0
+        var backingWidth: GLint = 0
+        var backingHeight: GLint = 0
         glGetRenderbufferParameteriv(GLenum(GL_RENDERBUFFER), GLenum(GL_RENDERBUFFER_WIDTH), &backingWidth)
         glGetRenderbufferParameteriv(GLenum(GL_RENDERBUFFER), GLenum(GL_RENDERBUFFER_HEIGHT), &backingHeight)
-        backingSize = GLSize(width:backingWidth, height:backingHeight)
+        backingSize = GLSize(width: backingWidth, height: backingHeight)
         
-        guard (backingWidth > 0 && backingHeight > 0) else {
+        guard backingWidth > 0 && backingHeight > 0 else {
             print("WARNING: View had a zero size")
             
-            if(self.internalLayer.bounds.width > 0 && self.internalLayer.bounds.height > 0) {
+            if self.internalLayer.bounds.width > 0 && self.internalLayer.bounds.height > 0 {
                 print("WARNING: View size \(self.internalLayer.bounds) may be too large ")
             }
             return false
@@ -142,8 +142,8 @@ public class RenderView:UIView, ImageConsumer {
         glFramebufferRenderbuffer(GLenum(GL_FRAMEBUFFER), GLenum(GL_COLOR_ATTACHMENT0), GLenum(GL_RENDERBUFFER), displayRenderbuffer!)
         
         let status = glCheckFramebufferStatus(GLenum(GL_FRAMEBUFFER))
-        if (status != GLenum(GL_FRAMEBUFFER_COMPLETE)) {
-            print("WARNING: Display framebuffer creation failed with error: \(FramebufferCreationError(errorCode:status))")
+        if status != GLenum(GL_FRAMEBUFFER_COMPLETE) {
+            print("WARNING: Display framebuffer creation failed with error: \(FramebufferCreationError(errorCode: status))")
             return false
         }
         
@@ -181,17 +181,16 @@ public class RenderView:UIView, ImageConsumer {
         glViewport(0, 0, backingSize.width, backingSize.height)
     }
     
-    public func newFramebufferAvailable(_ framebuffer:Framebuffer, fromSourceIndex:UInt) {
+    public func newFramebufferAvailable(_ framebuffer: Framebuffer, fromSourceIndex: UInt) {
         let cleanup: () -> Void = { [weak self] in
             guard let self = self else { return }
             
-            if(self.delegate?.shouldDisplayNextFramebufferAfterMainThreadLoop() ?? false) {
+            if self.delegate?.shouldDisplayNextFramebufferAfterMainThreadLoop() ?? false {
                 DispatchQueue.main.async {
                     self.delegate?.didDisplayFramebuffer(renderView: self, framebuffer: framebuffer)
                     framebuffer.unlock()
                 }
-            }
-            else {
+            } else {
                 self.delegate?.didDisplayFramebuffer(renderView: self, framebuffer: framebuffer)
                 framebuffer.unlock()
             }
@@ -203,7 +202,7 @@ public class RenderView:UIView, ImageConsumer {
             // Fix crash when calling OpenGL when app is not foreground
             guard self.isAppForeground else { return }
             
-            if (self.displayFramebuffer == nil && !self.createDisplayFramebuffer()) {
+            if self.displayFramebuffer == nil && !self.createDisplayFramebuffer() {
                 cleanup()
                 // Bail if we couldn't successfully create the displayFramebuffer
                 return
@@ -226,8 +225,8 @@ public class RenderView:UIView, ImageConsumer {
                 inputTexture = framebuffer.texturePropertiesForTargetOrientation(self.orientation)
             }
             
-            let scaledVertices = self.fillMode.transformVertices(verticallyInvertedImageVertices, fromInputSize:framebuffer.sizeForTargetOrientation(self.orientation), toFitSize:self.backingSize)
-            renderQuadWithShader(self.displayShader, vertices:scaledVertices, inputTextures:[inputTexture])
+            let scaledVertices = self.fillMode.transformVertices(verticallyInvertedImageVertices, fromInputSize: framebuffer.sizeForTargetOrientation(self.orientation), toFitSize: self.backingSize)
+            renderQuadWithShader(self.displayShader, vertices: scaledVertices, inputTextures: [inputTexture])
             
             glBindRenderbuffer(GLenum(GL_RENDERBUFFER), self.displayRenderbuffer!)
             
@@ -236,7 +235,7 @@ public class RenderView:UIView, ImageConsumer {
             cleanup()
         }
         
-        if(self.delegate?.shouldDisplayNextFramebufferAfterMainThreadLoop() ?? false) {
+        if self.delegate?.shouldDisplayNextFramebufferAfterMainThreadLoop() ?? false {
             // CAUTION: Never call sync from the sharedImageProcessingContext, it will cause cyclic thread deadlocks
             // If you are curious, change this to sync, then try trimming/scrubbing a video
             // Before that happens you will get a deadlock when someone calls runOperationSynchronously since the main thread is blocked
@@ -246,8 +245,7 @@ public class RenderView:UIView, ImageConsumer {
                 
                 sharedImageProcessingContext.runOperationAsynchronously(work)
             }
-        }
-        else {
+        } else {
             self.delegate?.willDisplayFramebuffer(renderView: self, framebuffer: framebuffer)
             
             work()

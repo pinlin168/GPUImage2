@@ -16,19 +16,19 @@ import Glibc
 import Foundation
 
 public class AverageColorExtractor: BasicOperation {
-    public var extractedColorCallback:((Color) -> ())?
+    public var extractedColorCallback: ((Color) -> Void)?
     
     public init() {
-        super.init(vertexShader:AverageColorVertexShader, fragmentShader:AverageColorFragmentShader)
+        super.init(vertexShader: AverageColorVertexShader, fragmentShader: AverageColorFragmentShader)
     }
 
     override open func renderFrame() {
-        averageColorBySequentialReduction(inputFramebuffer:inputFramebuffers[0]!, shader:shader, extractAverageOperation:extractAverageColorFromFramebuffer)
+        averageColorBySequentialReduction(inputFramebuffer: inputFramebuffers[0]!, shader: shader, extractAverageOperation: extractAverageColorFromFramebuffer)
         releaseIncomingFramebuffers()
     }
     
-    func extractAverageColorFromFramebuffer(_ framebuffer:Framebuffer) {
-        var data = [UInt8](repeating:0, count:Int(framebuffer.size.width * framebuffer.size.height * 4))
+    func extractAverageColorFromFramebuffer(_ framebuffer: Framebuffer) {
+        var data = [UInt8](repeating: 0, count: Int(framebuffer.size.width * framebuffer.size.height * 4))
         glReadPixels(0, 0, framebuffer.size.width, framebuffer.size.height, GLenum(GL_RGBA), GLenum(GL_UNSIGNED_BYTE), &data)
         renderFramebuffer = framebuffer
         framebuffer.resetRetainCount()
@@ -43,13 +43,13 @@ public class AverageColorExtractor: BasicOperation {
             alphaTotal += Int(data[(currentPixel * 4) + 3])
         }
         
-        let returnColor = Color(red:Float(redTotal) / Float(totalNumberOfPixels) / 255.0, green:Float(greenTotal) / Float(totalNumberOfPixels) / 255.0, blue:Float(blueTotal) / Float(totalNumberOfPixels) / 255.0, alpha:Float(alphaTotal) / Float(totalNumberOfPixels) / 255.0)
+        let returnColor = Color(red: Float(redTotal) / Float(totalNumberOfPixels) / 255.0, green: Float(greenTotal) / Float(totalNumberOfPixels) / 255.0, blue: Float(blueTotal) / Float(totalNumberOfPixels) / 255.0, alpha: Float(alphaTotal) / Float(totalNumberOfPixels) / 255.0)
         
         extractedColorCallback?(returnColor)
     }
 }
 
-func averageColorBySequentialReduction(inputFramebuffer:Framebuffer, shader:ShaderProgram, extractAverageOperation:(Framebuffer) -> ()) {
+func averageColorBySequentialReduction(inputFramebuffer: Framebuffer, shader: ShaderProgram, extractAverageOperation: (Framebuffer) -> Void) {
     var uniformSettings = ShaderUniformSettings()
     let inputSize = Size(inputFramebuffer.size)
     let numberOfReductionsInX = floor(log(Double(inputSize.width)) / log(4.0))
@@ -58,14 +58,14 @@ func averageColorBySequentialReduction(inputFramebuffer:Framebuffer, shader:Shad
     inputFramebuffer.lock()
     var previousFramebuffer = inputFramebuffer
     for currentReduction in 0..<reductionsToHitSideLimit {
-        let currentStageSize = Size(width:Float(floor(Double(inputSize.width) / pow(4.0, Double(currentReduction) + 1.0))), height:Float(floor(Double(inputSize.height) / pow(4.0, Double(currentReduction) + 1.0))))
-        let currentFramebuffer = sharedImageProcessingContext.framebufferCache.requestFramebufferWithProperties(orientation:previousFramebuffer.orientation, size:GLSize(currentStageSize))
+        let currentStageSize = Size(width: Float(floor(Double(inputSize.width) / pow(4.0, Double(currentReduction) + 1.0))), height: Float(floor(Double(inputSize.height) / pow(4.0, Double(currentReduction) + 1.0))))
+        let currentFramebuffer = sharedImageProcessingContext.framebufferCache.requestFramebufferWithProperties(orientation: previousFramebuffer.orientation, size: GLSize(currentStageSize))
         currentFramebuffer.lock()
         uniformSettings["texelWidth"] = 0.25 / currentStageSize.width
         uniformSettings["texelHeight"] = 0.25 / currentStageSize.height
         
         currentFramebuffer.activateFramebufferForRendering()
-        renderQuadWithShader(shader, uniformSettings:uniformSettings, vertexBufferObject:sharedImageProcessingContext.standardImageVBO, inputTextures:[previousFramebuffer.texturePropertiesForTargetOrientation(currentFramebuffer.orientation)])
+        renderQuadWithShader(shader, uniformSettings: uniformSettings, vertexBufferObject: sharedImageProcessingContext.standardImageVBO, inputTextures: [previousFramebuffer.texturePropertiesForTargetOrientation(currentFramebuffer.orientation)])
         previousFramebuffer.unlock()
         previousFramebuffer = currentFramebuffer
     }

@@ -4,16 +4,16 @@ import AVFoundation
 
 class ViewController: UIViewController {
     @IBOutlet weak var renderView: RenderView!
-    var camera:Camera!
-    var filter:SaturationAdjustment!
+    var camera: Camera!
+    var filter: SaturationAdjustment!
     var isRecording = false
-    var movieOutput:MovieOutput? = nil
+    var movieOutput: MovieOutput?
 
     override func viewDidLoad() {
         super.viewDidLoad()
         
         do {
-            camera = try Camera(sessionPreset:AVCaptureSession.Preset.vga640x480)
+            camera = try Camera(sessionPreset: AVCaptureSession.Preset.vga640x480)
             camera.runBenchmark = true
             filter = SaturationAdjustment()
             camera --> filter --> renderView
@@ -28,13 +28,13 @@ class ViewController: UIViewController {
     }
     
     @IBAction func capture(_ sender: AnyObject) {
-        if (!isRecording) {
+        if !isRecording {
             do {
                 self.isRecording = true
-                let documentsDir = try FileManager.default.url(for:.documentDirectory, in:.userDomainMask, appropriateFor:nil, create:true)
-                let fileURL = URL(string:"test.mp4", relativeTo:documentsDir)!
+                let documentsDir = try FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+                let fileURL = URL(string: "test.mp4", relativeTo: documentsDir)!
                 do {
-                    try FileManager.default.removeItem(at:fileURL)
+                    try FileManager.default.removeItem(at: fileURL)
                 } catch {
                 }
                 
@@ -45,19 +45,19 @@ class ViewController: UIViewController {
                     fatalError("ERROR: Could not connect audio target with error: \(error)")
                 }
                 
-                let audioSettings = self.camera!.audioOutput?.recommendedAudioSettingsForAssetWriter(writingTo:AVFileType.mp4) as? [String : Any]
-                var videoSettings:[String : Any]? = nil
+                let audioSettings = self.camera!.audioOutput?.recommendedAudioSettingsForAssetWriter(writingTo: AVFileType.mp4) as? [String: Any]
+                var videoSettings: [String: Any]?
                 if #available(iOS 11.0, *) {
-                    videoSettings = self.camera!.videoOutput.recommendedVideoSettings(forVideoCodecType:.h264, assetWriterOutputFileType:AVFileType.mp4) as? [String : Any]
+                    videoSettings = self.camera!.videoOutput.recommendedVideoSettings(forVideoCodecType: .h264, assetWriterOutputFileType: AVFileType.mp4) as? [String: Any]
                     videoSettings![AVVideoWidthKey] = nil
                     videoSettings![AVVideoHeightKey] = nil
                 }
                 
-                movieOutput = try MovieOutput(URL:fileURL, size:Size(width:480, height:640), fileType:AVFileType.mp4, liveVideo:true, videoSettings:videoSettings, audioSettings:audioSettings)
+                movieOutput = try MovieOutput(URL: fileURL, size: Size(width: 480, height: 640), fileType: AVFileType.mp4, liveVideo: true, videoSettings: videoSettings, audioSettings: audioSettings)
                 camera.audioEncodingTarget = movieOutput
                 filter --> movieOutput!
-                movieOutput!.startRecording() { started, error in
-                    if(!started) {
+                movieOutput!.startRecording { started, error in
+                    if !started {
                         self.isRecording = false
                         fatalError("ERROR: Could not start writing with error: \(String(describing: error))")
                     }
@@ -70,7 +70,7 @@ class ViewController: UIViewController {
                 fatalError("Couldn't initialize movie, error: \(error)")
             }
         } else {
-            movieOutput?.finishRecording{
+            movieOutput?.finishRecording {
                 self.isRecording = false
                 DispatchQueue.main.async {
                     (sender as! UIButton).titleLabel!.text = "Record"

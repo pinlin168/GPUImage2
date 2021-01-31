@@ -5,14 +5,13 @@ import AVFoundation
 let blendImageName = "Lambeau.jpg"
 
 class FilterShowcaseWindowController: NSWindowController {
-
     @IBOutlet var filterView: RenderView!
 
     @IBOutlet weak var filterSlider: NSSlider!
     
-    dynamic var currentSliderValue:Float = 0.5 {
+    dynamic var currentSliderValue: Float = 0.5 {
         willSet(newSliderValue) {
-            switch (currentFilterOperation!.sliderConfiguration) {
+            switch currentFilterOperation!.sliderConfiguration {
                 case .enabled: currentFilterOperation!.updateBasedOnSliderValue(newSliderValue)
                 case .disabled: break
             }
@@ -20,9 +19,9 @@ class FilterShowcaseWindowController: NSWindowController {
     }
     
     var currentFilterOperation: FilterOperationInterface?
-    var videoCamera:Camera!
-    lazy var blendImage:PictureInput = {
-        return PictureInput(imageName:blendImageName)
+    var videoCamera: Camera!
+    lazy var blendImage: PictureInput = {
+        return PictureInput(imageName: blendImageName)
     }()
     var currentlySelectedRow = 1
 
@@ -30,7 +29,7 @@ class FilterShowcaseWindowController: NSWindowController {
         super.windowDidLoad()
 
         do {
-            videoCamera = try Camera(sessionPreset:AVCaptureSessionPreset1280x720)
+            videoCamera = try Camera(sessionPreset: AVCaptureSessionPreset1280x720)
             videoCamera.runBenchmark = true
             videoCamera.startCapture()
         } catch {
@@ -39,8 +38,8 @@ class FilterShowcaseWindowController: NSWindowController {
         self.changeSelectedRow(0)
     }
     
-    func changeSelectedRow(_ row:Int) {
-        guard (currentlySelectedRow != row) else { return }
+    func changeSelectedRow(_ row: Int) {
+        guard currentlySelectedRow != row else { return }
         currentlySelectedRow = row
         
         // Clean up everything from the previous filter selection first
@@ -81,12 +80,12 @@ class FilterShowcaseWindowController: NSWindowController {
 // MARK: -
 // MARK: Table view delegate and datasource methods
     
-    func numberOfRowsInTableView(_ aTableView:NSTableView!) -> Int {
+    func numberOfRowsInTableView(_ aTableView: NSTableView!) -> Int {
         return filterOperations.count
     }
     
-    func tableView(_ aTableView:NSTableView!, objectValueForTableColumn aTableColumn:NSTableColumn!, row rowIndex:Int) -> AnyObject! {
-        let filterInList:FilterOperationInterface = filterOperations[rowIndex]
+    func tableView(_ aTableView: NSTableView!, objectValueForTableColumn aTableColumn: NSTableColumn!, row rowIndex: Int) -> AnyObject! {
+        let filterInList: FilterOperationInterface = filterOperations[rowIndex]
         return filterInList.listName as NSString
     }
     

@@ -5,13 +5,13 @@ import Glibc
 import Foundation
 
 public class BoxBlur: TwoStageOperation {
-    public var blurRadiusInPixels:Float {
+    public var blurRadiusInPixels: Float {
         didSet {
-            let (sigma, downsamplingFactor) = sigmaAndDownsamplingForBlurRadius(blurRadiusInPixels, limit:8.0, override:overrideDownsamplingOptimization)
+            let (sigma, downsamplingFactor) = sigmaAndDownsamplingForBlurRadius(blurRadiusInPixels, limit: 8.0, override: overrideDownsamplingOptimization)
             sharedImageProcessingContext.runOperationAsynchronously {
                 self.downsamplingFactor = downsamplingFactor
                 let pixelRadius = pixelRadiusForBlurSigma(Double(sigma))
-                self.shader = crashOnShaderCompileFailure("BoxBlur"){try sharedImageProcessingContext.programForVertexShader(vertexShaderForOptimizedBoxBlurOfRadius(pixelRadius), fragmentShader:fragmentShaderForOptimizedBoxBlurOfRadius(pixelRadius))}
+                self.shader = crashOnShaderCompileFailure("BoxBlur") { try sharedImageProcessingContext.programForVertexShader(vertexShaderForOptimizedBoxBlurOfRadius(pixelRadius), fragmentShader: fragmentShaderForOptimizedBoxBlurOfRadius(pixelRadius)) }
             }
         }
     }
@@ -19,13 +19,13 @@ public class BoxBlur: TwoStageOperation {
     public init() {
         blurRadiusInPixels = 2.0
         let pixelRadius = UInt(round(round(Double(blurRadiusInPixels) / 2.0) * 2.0))
-        let initialShader = crashOnShaderCompileFailure("BoxBlur"){try sharedImageProcessingContext.programForVertexShader(vertexShaderForOptimizedBoxBlurOfRadius(pixelRadius), fragmentShader:fragmentShaderForOptimizedBoxBlurOfRadius(pixelRadius))}
-        super.init(shader:initialShader, numberOfInputs:1)
+        let initialShader = crashOnShaderCompileFailure("BoxBlur") { try sharedImageProcessingContext.programForVertexShader(vertexShaderForOptimizedBoxBlurOfRadius(pixelRadius), fragmentShader: fragmentShaderForOptimizedBoxBlurOfRadius(pixelRadius)) }
+        super.init(shader: initialShader, numberOfInputs: 1)
     }
 }
 
-func vertexShaderForOptimizedBoxBlurOfRadius(_ radius:UInt) -> String {
-    guard (radius > 0) else { return OneInputVertexShader }
+func vertexShaderForOptimizedBoxBlurOfRadius(_ radius: UInt) -> String {
+    guard radius > 0 else { return OneInputVertexShader }
 
     let numberOfOptimizedOffsets = min(radius / 2 + (radius % 2), 7)
     var shaderString = "attribute vec4 position;\n attribute vec4 inputTextureCoordinate;\n \n uniform float texelWidth;\n uniform float texelHeight;\n \n varying vec2 blurCoordinates[\(1 + (numberOfOptimizedOffsets * 2))];\n \n void main()\n {\n gl_Position = position;\n \n vec2 singleStepOffset = vec2(texelWidth, texelHeight);\n"
@@ -40,8 +40,8 @@ func vertexShaderForOptimizedBoxBlurOfRadius(_ radius:UInt) -> String {
     return shaderString
 }
 
-func fragmentShaderForOptimizedBoxBlurOfRadius(_ radius:UInt) -> String {
-    guard (radius > 0) else { return PassthroughFragmentShader }
+func fragmentShaderForOptimizedBoxBlurOfRadius(_ radius: UInt) -> String {
+    guard radius > 0 else { return PassthroughFragmentShader }
     
     let numberOfOptimizedOffsets = min(radius / 2 + (radius % 2), 7)
     let trueNumberOfOptimizedOffsets = radius / 2 + (radius % 2)
@@ -62,7 +62,7 @@ func fragmentShaderForOptimizedBoxBlurOfRadius(_ radius:UInt) -> String {
     }
     
     // If the number of required samples exceeds the amount we can pass in via varyings, we have to do dependent texture reads in the fragment shader
-    if (trueNumberOfOptimizedOffsets > numberOfOptimizedOffsets) {
+    if trueNumberOfOptimizedOffsets > numberOfOptimizedOffsets {
 #if GLES
         shaderString += "highp vec2 singleStepOffset = vec2(texelWidth, texelHeight);\n"
 #else

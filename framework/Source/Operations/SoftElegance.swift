@@ -8,12 +8,11 @@ public class SoftElegance: OperationGroup {
     public override init() {
         super.init()
         
-        self.configureGroup{input, output in
+        self.configureGroup {input, output in
             do {
-                self.lookup1.lookupImage = try PictureInput(imageName:"lookup_soft_elegance_1.png")
-                self.lookup2.lookupImage = try PictureInput(imageName:"lookup_soft_elegance_2.png")
-            }
-            catch {
+                self.lookup1.lookupImage = try PictureInput(imageName: "lookup_soft_elegance_1.png")
+                self.lookup2.lookupImage = try PictureInput(imageName: "lookup_soft_elegance_2.png")
+            } catch {
                 print("ERROR: Unable to create PictureInput \(error)")
             }
             self.gaussianBlur.blurRadiusInPixels = 10.0
