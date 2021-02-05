@@ -1,6 +1,19 @@
 import OpenGLES
 import UIKit
 
+public enum PictureInputTransformStep {
+    case scale(x: CGFloat, y: CGFloat)
+    case translation(tx: CGFloat, ty: CGFloat)
+    case rotation(angle: CGFloat)
+    
+    var isTranslation: Bool {
+        switch self {
+        case .translation: return true
+        default: return false
+        }
+    }
+}
+
 public enum PictureInputError: Error, CustomStringConvertible {
     case zeroSizedImageError
     case dataProviderNilError
@@ -149,27 +162,64 @@ public class PictureInput: ImageSource {
         try self.init(image: image.cgImage!, imageName: imageName, smoothlyScaleOutput: smoothlyScaleOutput, orientation: orientation ?? image.imageOrientation.gpuOrientation)
     }
     
-    public convenience init(image: UIImage, size: CGSize?, smoothlyScaleOutput: Bool = false, orientation: ImageOrientation? = nil) throws {
+    public convenience init(image: UIImage, size: CGSize?, smoothlyScaleOutput: Bool = false, orientation: ImageOrientation? = nil, transforms: [[PictureInputTransformStep]]? = nil) throws {
         var targetOrientation = orientation ?? image.imageOrientation.gpuOrientation
         var cgImage: CGImage = image.cgImage!
         if let targetSize = size {
             autoreleasepool {
                 // Get CIImage with orientation
-                guard var newImage = CIImage(image: image, options:
-                                                [.applyOrientationProperty: true,
-                                                 .properties: [kCGImagePropertyOrientation: image.imageOrientation.cgImageOrientation.rawValue]]) else {
-                    return
-                }
+                guard var newImage = CIImage(
+                        image: image,
+                        options: [
+                            .applyOrientationProperty: true,
+                            .properties: [
+                                kCGImagePropertyOrientation: image.imageOrientation.cgImageOrientation.rawValue
+                            ]
+                        ]
+                ) else { return }
                 
                 // Scale
                 let ratioW = targetSize.width / image.size.width
                 let ratioH = targetSize.height / image.size.height
                 let fillRatio = max(ratioW, ratioH)
-                let scaleTransform = CGAffineTransform(scaleX: fillRatio, y: fillRatio)
-                newImage = newImage.transformed(by: scaleTransform)
+                newImage = newImage.transformed(by: CGAffineTransform(scaleX: fillRatio, y: fillRatio))
+                
+                var scaleX: CGFloat = 1
+                var scaleY: CGFloat = 1
+                var translationX: CGFloat = 0
+                var translationY: CGFloat = 0
+                if let stepGroups = transforms, !stepGroups.isEmpty {
+                    var extraTransform = CGAffineTransform.identity
+                    for group in stepGroups {
+                        var groupTransform = CGAffineTransform.identity
+                        for step in group {
+                            switch step {
+                            case let .scale(x, y):
+                                if group.contains(where: { $0.isTranslation }) {
+                                    scaleX *= x
+                                    scaleY *= y
+                                }
+                                groupTransform = groupTransform.concatenating(.init(scaleX: x, y: y))
+                            case let .translation(tx, ty):
+                                translationX += (tx * scaleX * targetSize.width)
+                                translationY += (ty * scaleY * targetSize.height)
+                                groupTransform = groupTransform.concatenating(.init(translationX: translationX, y: translationY))
+                            case let .rotation(angle):
+                                groupTransform = groupTransform.concatenating(.init(rotationAngle: angle))
+                            }
+                        }
+                        extraTransform = extraTransform.concatenating(groupTransform)
+                    }
+                    newImage = newImage.transformed(by: extraTransform)
+                }
                 
                 // Crop and generate image
-                let cropRect = CGRect(x: (newImage.extent.size.width - targetSize.width) / 2, y: (newImage.extent.size.height - targetSize.height) / 2, width: targetSize.width, height: targetSize.height)
+                let cropRect = CGRect(
+                    x: newImage.extent.origin.x - translationX + (newImage.extent.size.width - targetSize.width) / 2,
+                    y: newImage.extent.origin.y + translationY + (newImage.extent.size.height - targetSize.height) / 2,
+                    width: targetSize.width,
+                    height: targetSize.height
+                )
                 
                 let context = CIContext(options: nil)
                 cgImage = context.createCGImage(newImage, from: cropRect)!
