@@ -438,8 +438,9 @@ public class Camera: NSObject, ImageSource, AVCaptureVideoDataOutputSampleBuffer
         }
     }
     
-    public func stopCapture() {
-        if captureSession.isRunning {
+    public func stopCapture(force: Bool = false) {
+        // NOTE: Sometime camera is actually running, but isRunning is false. When it happens, set force to true.
+        if captureSession.isRunning || force {
             captureSession.stopRunning()
         }
     }
