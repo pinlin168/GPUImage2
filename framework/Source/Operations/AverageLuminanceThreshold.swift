@@ -7,7 +7,7 @@ public class AverageLuminanceThreshold: OperationGroup {
     public override init() {
         super.init()
         
-        averageLuminance.extractedLuminanceCallback = {[weak self] luminance in
+        averageLuminance.extractedLuminanceCallback = { [weak self] luminance in
             self?.luminanceThreshold.threshold = (self?.thresholdMultiplier ?? 1.0) * luminance
         }
         

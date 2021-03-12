@@ -9,7 +9,7 @@ public class MotionDetector: OperationGroup {
     public override init() {
         super.init()
         
-        averageColorExtractor.extractedColorCallback = {[weak self] color in
+        averageColorExtractor.extractedColorCallback = { [weak self] color in
             self?.motionDetectedCallback?(Position(color.redComponent / color.alphaComponent, color.greenComponent / color.alphaComponent), color.alphaComponent)
         }
         

@@ -20,7 +20,7 @@ open class BasicOperation: ImageProcessingOperation {
     public var mask: ImageSource? {
         didSet {
             if let mask = mask {
-                maskImageRelay.newImageCallback = {[weak self] framebuffer in
+                maskImageRelay.newImageCallback = { [weak self] framebuffer in
                     self?.maskFramebuffer?.unlock()
                     framebuffer.lock()
                     self?.maskFramebuffer = framebuffer

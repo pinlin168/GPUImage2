@@ -44,7 +44,7 @@ public class HarrisCornerDetector: OperationGroup {
         ({ sensitivity = 5.0 })()
         ({ threshold = 0.2 })()
         
-        outputImageRelay.newImageCallback = {[weak self] framebuffer in
+        outputImageRelay.newImageCallback = { [weak self] framebuffer in
             if let cornersDetectedCallback = self?.cornersDetectedCallback {
                 cornersDetectedCallback(extractCornersFromImage(framebuffer))
             }
