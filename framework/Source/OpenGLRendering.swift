@@ -104,6 +104,10 @@ public func renderQuadWithShader(_ shader: ShaderProgram, uniformSettings: Shade
 
         shader.setValue(GLint(index), forUniform: "inputImageTexture".withNonZeroSuffix(index))
     }
+
+    if let initTime = shader.initTime {
+        shader.setValue(GLfloat(CACurrentMediaTime() - initTime), forUniform: "inputTime")
+    }
     
     glDrawArrays(GLenum(GL_TRIANGLE_STRIP), 0, 4)
     

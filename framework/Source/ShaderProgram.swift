@@ -27,6 +27,7 @@ public class ShaderProgram {
     public var colorUniformsUseFourComponents = false
     public static var disableAttributeCache: Bool = false
     let program: GLuint
+    let initTime: CFTimeInterval?
     var vertexShader: GLuint! // At some point, the Swift compiler will be able to deal with the early throw and we can convert these to lets
     var fragmentShader: GLuint!
     private var attributeAddresses = [String: GLuint]()
@@ -43,10 +44,17 @@ public class ShaderProgram {
         
         self.vertexShader = try compileShader(vertexShader, type: .vertex)
         self.fragmentShader = try compileShader(fragmentShader, type: .fragment)
-        
+
+        // tricky way to control if needs set inputTime
+        if fragmentShader.contains("uniform float inputTime") {
+            self.initTime = CACurrentMediaTime()
+        } else {
+            self.initTime = nil
+        }
+
         glAttachShader(program, self.vertexShader)
         glAttachShader(program, self.fragmentShader)
-        
+
         try link()
     }
 
