@@ -56,7 +56,11 @@ public class MoviePlayer: AVQueuePlayer, ImageSource {
     public var dropFrameBeforeTime: CMTime?
     public var playrate: Float = 1.0
     public var assetDuration: CMTime {
-        return asset?.duration ?? .zero
+        if asset?.statusOfValue(forKey: "duration", error: nil) == .loaded {
+            return asset?.duration ?? .zero
+        } else {
+            return .zero
+        }
     }
     public var isReadyToPlay: Bool {
         return status == .readyToPlay
@@ -123,6 +127,8 @@ public class MoviePlayer: AVQueuePlayer, ImageSource {
     
     public override init() {
         print("[MoviePlayer] init")
+        // Make sure player it intialized on the main thread, or it might cause KVO crash
+        assert(Thread.isMainThread)
         super.init()
     }
     
@@ -288,7 +294,7 @@ public class MoviePlayer: AVQueuePlayer, ImageSource {
         }
         isPlaying = true
         isProcessing = false
-        print("[MoviePlayer] start duration:\(String(describing: asset?.duration.seconds)) items:\(items())")
+//        print("[MoviePlayer] start duration:\(String(describing: asset?.duration.seconds)) items:\(items())")
         _setupDisplayLinkIfNeeded()
         _resetTimeObservers()
         didNotifyEndedItem = nil
@@ -562,8 +568,8 @@ private extension MoviePlayer {
     }
     
     func playerItemStatusDidChange(_ playerItem: AVPlayerItem) {
-        debugPrint("[MoviePlayer] PlayerItem status change to:\(playerItem.status.rawValue) asset:\(playerItem.asset)")
-        if playerItem == currentItem {
+        debugPrint("[MoviePlayer] PlayerItem status change to:\(playerItem.status.rawValue) asset:\(playerItem.asset), error: \(playerItem.error)")
+        if playerItem == currentItem && playerItem.status == .readyToPlay {
             resumeIfNeeded()
         }
     }
