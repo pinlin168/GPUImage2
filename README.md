@@ -24,7 +24,7 @@ BSD-style, with the full license available with the framework in License.txt.
 
 - Swift 3
 - Xcode 8.0 on Mac or iOS
-- iOS: 8.0 or higher (Swift is supported on 7.0, but not Mac-style frameworks)
+- iOS: 11.0 or higher (Swift is supported on 7.0, but not Mac-style frameworks)
 - OSX: 10.9 or higher
 - Linux: Wherever Swift code can be compiled. Currently, that's Ubuntu 14.04 or higher, along with the many other places it has been ported to. I've gotten this running on the latest Raspbian, for example. For camera input, Video4Linux needs to be installed.
 
